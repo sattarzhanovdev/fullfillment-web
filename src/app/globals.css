@@ -154,3 +154,23 @@ body {
     display: none !important;
   }
 }
+
+/* Анимации попапов (Dialog). Именованные keyframes нужны, чтобы Radix корректно
+   дожидался animationend и на самом деле размонтировал контент при закрытии —
+   без реального @keyframes закрытие "подвисает". */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes dialog-in {
+  from { opacity: 0; scale: 0.96; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes dialog-out {
+  from { opacity: 1; scale: 1; }
+  to { opacity: 0; scale: 0.96; }
+}
