@@ -24,33 +24,91 @@ const PRICE_SOURCE_LABELS: Record<string, string> = {
   NEEDS_PRICE: "Требует цены",
 };
 
+type StatusFilter = "all" | "active" | "hidden" | "no-dimensions" | "has-dimensions";
+
+const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
+  all: "Все статусы",
+  active: "Активен",
+  hidden: "Скрыт",
+  "no-dimensions": "Без габаритов",
+  "has-dimensions": "С габаритами",
+};
+
 export default function ProductsPage() {
   const [search, setSearch] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const { data: clients } = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => (await apiClient.get<Client[]>("/clients")).data,
+  });
+
   const { data, isLoading } = useQuery({
-    queryKey: ["products", search],
-    queryFn: async () => (await apiClient.get<Product[]>("/products", { params: { search: search || undefined } })).data,
+    queryKey: ["products", search, clientId],
+    queryFn: async () =>
+      (
+        await apiClient.get<Product[]>("/products", {
+          params: { search: search || undefined, clientId: clientId || undefined },
+        })
+      ).data,
+  });
+
+  const filtered = (data ?? []).filter((p) => {
+    switch (statusFilter) {
+      case "active":
+        return p.isActive;
+      case "hidden":
+        return !p.isActive;
+      case "no-dimensions":
+        return !p.lengthCm || !p.widthCm || !p.heightCm;
+      case "has-dimensions":
+        return !!(p.lengthCm && p.widthCm && p.heightCm);
+      default:
+        return true;
+    }
   });
 
   return (
     <div>
-      <PageHeader title="Товары" description="Карточки товаров всех клиентов" actions={<CreateProductDialog />} />
+      <PageHeader
+        title="Товары"
+        description={data ? `Карточки товаров всех клиентов · показано ${filtered.length} из ${data.length}` : "Карточки товаров всех клиентов"}
+        actions={<CreateProductDialog />}
+      />
 
-      <div className="relative mb-4 max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-foreground-muted)]" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Артикул / штрихкод / название"
-          className="pl-9"
-        />
+      <div className="mb-4 flex flex-wrap gap-3">
+        <div className="relative w-64">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-foreground-muted)]" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Артикул / штрихкод / название"
+            className="pl-9"
+          />
+        </div>
+        <Select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-56">
+          <option value="">Все клиенты</option>
+          {clients?.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </Select>
+        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="w-48">
+          {(Object.keys(STATUS_FILTER_LABELS) as StatusFilter[]).map((key) => (
+            <option key={key} value={key}>
+              {STATUS_FILTER_LABELS[key]}
+            </option>
+          ))}
+        </Select>
       </div>
 
       <Card className="overflow-hidden">
         {isLoading ? (
           <LoadingBlock />
-        ) : !data || data.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <EmptyState title="Товары не найдены" />
         ) : (
           <Table>
@@ -66,7 +124,7 @@ export default function ProductsPage() {
               </tr>
             </Thead>
             <tbody>
-              {data.map((p) => (
+              {filtered.map((p) => (
                 <Tr key={p.id} onClick={() => setSelectedId(p.id)} className="cursor-pointer">
                   <Td className="font-medium">{p.name}</Td>
                   <Td>{p.client?.name ?? "—"}</Td>
