@@ -8,10 +8,11 @@ import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/input";
+import { Input, Label, Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, Thead, Th, Tr, Td } from "@/components/ui/table";
 import { LoadingBlock } from "@/components/ui/spinner";
+import { Dialog, DialogContent, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { OrderStatusBadge } from "@/components/ui/status-badge";
 import { ORDER_STATUS_LABELS, MARKETPLACE_LABELS } from "@/lib/status";
 import { formatDateTime, formatMoney } from "@/lib/utils";
@@ -78,24 +79,6 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
     onError: (err) => setError(apiErrorMessage(err)),
   });
 
-  const labelMutation = useMutation({
-    mutationFn: async () =>
-      (await apiClient.get<{ contentType: string; fileBase64: string }>(`/marketplaces/orders/${id}/label`)).data,
-    onSuccess: (label) => {
-      setError(null);
-      const win = window.open("", "_blank", "width=420,height=520");
-      if (!win) {
-        setError("Браузер заблокировал всплывающее окно — разрешите всплывающие окна и попробуйте снова");
-        return;
-      }
-      win.document.write(
-        `<html><head><title>Этикетка ${order?.orderNumber ?? ""}</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff"><img src="data:${label.contentType};base64,${label.fileBase64}" style="max-width:100%" onload="window.print()" /></body></html>`,
-      );
-      win.document.close();
-    },
-    onError: (err) => setError(apiErrorMessage(err, "Не удалось получить этикетку от маркетплейса")),
-  });
-
   if (isLoading || !order) return <LoadingBlock />;
 
   return (
@@ -112,15 +95,7 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
         description={`${MARKETPLACE_LABELS[order.marketplace] ?? order.marketplace} · ${order.client.name}`}
         actions={
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={labelMutation.isPending}
-              onClick={() => labelMutation.mutate()}
-            >
-              <Printer className="h-3.5 w-3.5" />
-              {labelMutation.isPending ? "Загрузка…" : "Этикетка"}
-            </Button>
+            <PrintLabelDialog orderId={id} orderNumber={order.orderNumber} />
             <OrderStatusBadge status={order.status} />
           </div>
         }
@@ -243,5 +218,110 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+const LABEL_SIZE_PRESETS = [
+  { key: "58x40", label: "58 × 40 мм (стандарт WB)", width: 58, height: 40 },
+  { key: "40x30", label: "40 × 30 мм", width: 40, height: 30 },
+  { key: "custom", label: "Свой размер", width: 0, height: 0 },
+] as const;
+
+type LabelPresetKey = (typeof LABEL_SIZE_PRESETS)[number]["key"];
+
+function PrintLabelDialog({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [presetKey, setPresetKey] = useState<LabelPresetKey>("58x40");
+  const [customWidth, setCustomWidth] = useState("58");
+  const [customHeight, setCustomHeight] = useState("40");
+  const [quantity, setQuantity] = useState("1");
+
+  const preset = LABEL_SIZE_PRESETS.find((p) => p.key === presetKey)!;
+  const width = presetKey === "custom" ? Number(customWidth) || 58 : preset.width;
+  const height = presetKey === "custom" ? Number(customHeight) || 40 : preset.height;
+
+  const labelMutation = useMutation({
+    mutationFn: async () =>
+      (
+        await apiClient.get<{ contentType: string; fileBase64: string }>(`/marketplaces/orders/${orderId}/label`, {
+          params: { width, height },
+        })
+      ).data,
+    onSuccess: (label) => {
+      setError(null);
+      const win = window.open("", "_blank", "width=420,height=560");
+      if (!win) {
+        setError("Браузер заблокировал всплывающее окно — разрешите всплывающие окна и попробуйте снова");
+        return;
+      }
+      const count = Math.max(1, Math.min(200, Number(quantity) || 1));
+      // page-break-after печатает каждую копию на отдельном "листе" — для ленточного
+      // принтера этикеток это отдельная наклейка, а не N штук на одном листе.
+      const imgTag = `<img src="data:${label.contentType};base64,${label.fileBase64}" style="width:100%;display:block;page-break-after:always" />`;
+      win.document.write(
+        `<html><head><title>Этикетка ${orderNumber}</title><style>@page{size:${width}mm ${height}mm;margin:0}body{margin:0}</style></head><body onload="window.print()">${imgTag.repeat(count)}</body></html>`,
+      );
+      win.document.close();
+      setOpen(false);
+    },
+    onError: (err) => setError(apiErrorMessage(err, "Не удалось получить этикетку от маркетплейса")),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="secondary">
+          <Printer className="h-3.5 w-3.5" />
+          Этикетка
+        </Button>
+      </DialogTrigger>
+      <DialogContent title="Печать этикетки" description="Размер под ваш принтер этикеток и количество копий">
+        <div className="flex flex-col gap-3">
+          <div>
+            <Label htmlFor="label-size">Размер этикетки</Label>
+            <Select id="label-size" value={presetKey} onChange={(e) => setPresetKey(e.target.value as LabelPresetKey)}>
+              {LABEL_SIZE_PRESETS.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          {presetKey === "custom" ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="label-width">Ширина, мм</Label>
+                <Input id="label-width" type="number" min={10} value={customWidth} onChange={(e) => setCustomWidth(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="label-height">Высота, мм</Label>
+                <Input id="label-height" type="number" min={10} value={customHeight} onChange={(e) => setCustomHeight(e.target.value)} />
+              </div>
+            </div>
+          ) : null}
+          <div>
+            <Label htmlFor="label-quantity">Количество копий</Label>
+            <Input
+              id="label-quantity"
+              type="number"
+              min={1}
+              max={200}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+          </div>
+          {error ? <p className="text-[13px] text-[var(--color-danger)]">{error}</p> : null}
+          <DialogFooter>
+            <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
+              Отмена
+            </Button>
+            <Button size="sm" disabled={labelMutation.isPending} onClick={() => labelMutation.mutate()}>
+              {labelMutation.isPending ? "Загрузка…" : "Печать"}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
