@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -78,6 +78,24 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
     onError: (err) => setError(apiErrorMessage(err)),
   });
 
+  const labelMutation = useMutation({
+    mutationFn: async () =>
+      (await apiClient.get<{ contentType: string; fileBase64: string }>(`/marketplaces/orders/${id}/label`)).data,
+    onSuccess: (label) => {
+      setError(null);
+      const win = window.open("", "_blank", "width=420,height=520");
+      if (!win) {
+        setError("Браузер заблокировал всплывающее окно — разрешите всплывающие окна и попробуйте снова");
+        return;
+      }
+      win.document.write(
+        `<html><head><title>Этикетка ${order?.orderNumber ?? ""}</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff"><img src="data:${label.contentType};base64,${label.fileBase64}" style="max-width:100%" onload="window.print()" /></body></html>`,
+      );
+      win.document.close();
+    },
+    onError: (err) => setError(apiErrorMessage(err, "Не удалось получить этикетку от маркетплейса")),
+  });
+
   if (isLoading || !order) return <LoadingBlock />;
 
   return (
@@ -92,7 +110,20 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
       <PageHeader
         title={`Заказ №${order.orderNumber}`}
         description={`${MARKETPLACE_LABELS[order.marketplace] ?? order.marketplace} · ${order.client.name}`}
-        actions={<OrderStatusBadge status={order.status} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={labelMutation.isPending}
+              onClick={() => labelMutation.mutate()}
+            >
+              <Printer className="h-3.5 w-3.5" />
+              {labelMutation.isPending ? "Загрузка…" : "Этикетка"}
+            </Button>
+            <OrderStatusBadge status={order.status} />
+          </div>
+        }
       />
 
       <div className="mb-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
