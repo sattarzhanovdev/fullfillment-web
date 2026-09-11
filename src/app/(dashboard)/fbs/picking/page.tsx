@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { LoadingBlock } from "@/components/ui/spinner";
+import { OrderLabelCard } from "@/components/scanner/order-label-card";
 import { cn } from "@/lib/utils";
 
 interface PickableItem {
@@ -48,6 +49,11 @@ export default function FbsPickingPage() {
   const [scanValue, setScanValue] = useState("");
   const [scanError, setScanError] = useState<string | null>(null);
   const [flashIds, setFlashIds] = useState<Record<string, "ok" | "err">>({});
+  const [lastScanned, setLastScanned] = useState<{
+    orderId: string;
+    orderNumber: string;
+    product: { name: string; article: string; barcode: string };
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: clients } = useQuery({
@@ -72,14 +78,29 @@ export default function FbsPickingPage() {
   }, [items]);
 
   const pickMutation = useMutation({
-    mutationFn: async (params: { orderId: string; barcode: string; itemId: string }) =>
-      apiClient.post(`/orders/${params.orderId}/pick`, { barcode: params.barcode }),
-    onSuccess: (_res, variables) => {
+    mutationFn: async (params: {
+      orderId: string;
+      barcode: string;
+      itemId: string;
+      orderNumber: string;
+      product: { name: string; article: string; barcode: string };
+    }) => apiClient.post(`/orders/${params.orderId}/pick`, { barcode: params.barcode }),
+    onSuccess: async (_res, variables) => {
       setScanError(null);
       setFlashIds((f) => ({ ...f, [variables.itemId]: "ok" }));
       playBeep(true);
       queryClient.invalidateQueries({ queryKey: ["picking-items", clientId] });
       setTimeout(() => setFlashIds((f) => { const n = { ...f }; delete n[variables.itemId]; return n; }), 1200);
+
+      // Подключаем заказ к отгрузке как можно раньше — только это заставляет WB подтвердить
+      // заказ (supplierStatus new → confirm) и выдать стикер. Best-effort: если не удалось,
+      // карточка ниже просто покажет запасной внутренний штрихкод.
+      try {
+        await apiClient.post(`/shipments/orders/${variables.orderId}/ensure`);
+      } catch {
+        // не критично
+      }
+      setLastScanned({ orderId: variables.orderId, orderNumber: variables.orderNumber, product: variables.product });
     },
     onError: (err) => {
       setScanError(apiErrorMessage(err, "Неверный товар"));
@@ -107,7 +128,13 @@ export default function FbsPickingPage() {
       playBeep(false);
       return;
     }
-    pickMutation.mutate({ orderId: match.orderId, barcode, itemId: match.id });
+    pickMutation.mutate({
+      orderId: match.orderId,
+      barcode,
+      itemId: match.id,
+      orderNumber: match.order.orderNumber,
+      product: match.product,
+    });
   }
 
   return (
@@ -154,6 +181,10 @@ export default function FbsPickingPage() {
             />
             {scanError ? <p className="mt-2 text-[13.5px] font-medium text-[var(--color-danger)]">{scanError}</p> : null}
           </Card>
+
+          {lastScanned ? (
+            <OrderLabelCard orderId={lastScanned.orderId} orderNumber={lastScanned.orderNumber} product={lastScanned.product} />
+          ) : null}
 
           {isLoading ? (
             <LoadingBlock />

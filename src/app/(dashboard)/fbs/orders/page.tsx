@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { OrderStatusBadge } from "@/components/ui/status-badge";
+import { OrderRowMenu } from "@/components/orders/order-row-menu";
 import { MARKETPLACE_LABELS } from "@/lib/status";
 import { formatDate } from "@/lib/utils";
 
@@ -27,49 +28,69 @@ interface OrderRow {
   priority: string;
   deadline: string | null;
   createdAt: string;
+  shipmentId: string | null;
   client: { id: string; name: string };
   items: { id: string; qtyNeeded: number }[];
   assignee: { id: string; fullName: string } | null;
 }
 
-const ACTIVE_STATUSES = [
-  "NEW_REQUEST",
-  "AWAITING_PROCESSING",
-  "IN_PROGRESS",
-  "PICKING",
-  "PICKED",
-  "PACKING",
-  "PACKED",
-  "READY_TO_SHIP",
-].join(",");
+interface OrderCounts {
+  new: number;
+  picking: number;
+  shipping: number;
+  completed: number;
+  cancelled: number;
+  archive: number;
+}
 
-const HISTORY_STATUSES = ["SHIPPED", "COMPLETED", "CANCELLED", "ERROR"].join(",");
+const GROUP_TABS: { value: string; label: string; group?: string; archived?: boolean; emptyTitle: string }[] = [
+  { value: "new", label: "Новые", group: "NEW", emptyTitle: "Новых заказов нет" },
+  { value: "picking", label: "На сборке", group: "PICKING", emptyTitle: "Заказов на сборке нет" },
+  { value: "shipping", label: "В доставке", group: "SHIPPING", emptyTitle: "Заказов в доставке нет" },
+  { value: "completed", label: "Завершённые", group: "COMPLETED", emptyTitle: "Завершённых заказов нет" },
+  { value: "cancelled", label: "Отменённые", group: "CANCELLED", emptyTitle: "Отменённых заказов нет" },
+  { value: "archive", label: "Архив", archived: true, emptyTitle: "Архив пуст" },
+];
 
 export default function FbsOrdersPage() {
+  const { data: counts } = useQuery({
+    queryKey: ["orders", "counts"],
+    queryFn: async () => (await apiClient.get<OrderCounts>("/orders/counts")).data,
+    refetchInterval: 20_000,
+  });
+
   return (
     <div>
       <PageHeader title="FBS · Заказы" description="Заказы маркетплейсов, обрабатываемые силами склада" actions={<CreateOrderDialog />} />
 
-      <Tabs defaultValue="active">
-        <TabsList className="mb-5">
-          <TabsTrigger value="active">Активные</TabsTrigger>
-          <TabsTrigger value="history">История</TabsTrigger>
+      <Tabs defaultValue="new">
+        <TabsList className="mb-5 flex-wrap">
+          {GROUP_TABS.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-1.5">
+              {tab.label}
+              {counts ? (
+                <Badge variant="accent" className="px-1.5 py-0.5">
+                  {counts[tab.value as keyof OrderCounts]}
+                </Badge>
+              ) : null}
+            </TabsTrigger>
+          ))}
         </TabsList>
-        <TabsContent value="active">
-          <OrdersTable statusParam={ACTIVE_STATUSES} emptyTitle="Активных заказов нет" />
-        </TabsContent>
-        <TabsContent value="history">
-          <OrdersTable statusParam={HISTORY_STATUSES} emptyTitle="История пуста" />
-        </TabsContent>
+        {GROUP_TABS.map((tab) => (
+          <TabsContent key={tab.value} value={tab.value}>
+            <OrdersTable group={tab.group} archived={tab.archived} emptyTitle={tab.emptyTitle} />
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   );
 }
 
-function OrdersTable({ statusParam, emptyTitle }: { statusParam: string; emptyTitle: string }) {
+function OrdersTable({ group, archived, emptyTitle }: { group?: string; archived?: boolean; emptyTitle: string }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["orders", statusParam],
-    queryFn: async () => (await apiClient.get<OrderRow[]>("/orders", { params: { status: statusParam } })).data,
+    queryKey: ["orders", { group, archived }],
+    queryFn: async () =>
+      (await apiClient.get<OrderRow[]>("/orders", { params: { group, archived: archived ? "true" : undefined } })).data,
     refetchInterval: 20_000,
   });
 
@@ -91,6 +112,7 @@ function OrdersTable({ statusParam, emptyTitle }: { statusParam: string; emptyTi
             <Th>Приоритет</Th>
             <Th>Ответственный</Th>
             <Th>Статус</Th>
+            <Th></Th>
           </tr>
         </Thead>
         <tbody>
@@ -117,6 +139,9 @@ function OrdersTable({ statusParam, emptyTitle }: { statusParam: string; emptyTi
               <Td>{order.assignee?.fullName ?? "—"}</Td>
               <Td>
                 <OrderStatusBadge status={order.status} />
+              </Td>
+              <Td>
+                <OrderRowMenu order={order} />
               </Td>
             </Tr>
           ))}

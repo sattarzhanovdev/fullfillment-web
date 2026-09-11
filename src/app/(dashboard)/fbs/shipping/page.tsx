@@ -1,23 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
-import { apiClient, apiErrorMessage } from "@/lib/api-client";
+import { ScanLine } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Select } from "@/components/ui/input";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { LoadingBlock } from "@/components/ui/spinner";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { CreateShipmentDialog } from "@/components/shipments/create-shipment-dialog";
+import { PrintShipmentBarcodeDialog } from "@/components/shipments/print-shipment-barcode-dialog";
+import { WbShippingMethodDialog } from "@/components/shipments/wb-shipping-method-dialog";
 import { MARKETPLACE_LABELS } from "@/lib/status";
 import { formatDateTime } from "@/lib/utils";
 
 interface Shipment {
   id: string;
+  barcode: string;
+  wbSupplyId: string | null;
+  wbShippingPointId: number | null;
   marketplace: string | null;
   scheduledAt: string;
   transport: string | null;
@@ -52,7 +58,21 @@ const SHIPMENT_STATUS_VARIANT: Record<string, "neutral" | "accent" | "success" |
 export default function FbsShippingPage() {
   return (
     <div>
-      <PageHeader title="FBS · Отгрузки" description="Формирование и учёт отгрузок FBS-заказов" actions={<CreateShipmentDialog />} />
+      <PageHeader
+        title="FBS · Отгрузки"
+        description="Формирование и учёт отгрузок FBS-заказов"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" asChild>
+              <Link href="/fbs/shipping/scan">
+                <ScanLine className="h-4 w-4" />
+                Сканирование
+              </Link>
+            </Button>
+            <CreateShipmentDialog />
+          </div>
+        }
+      />
 
       <Tabs defaultValue="current">
         <TabsList className="mb-5">
@@ -73,6 +93,7 @@ export default function FbsShippingPage() {
 function ShipmentsTable({ statusParam, emptyTitle }: { statusParam: string; emptyTitle: string }) {
   const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [wbWarning, setWbWarning] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["shipments", statusParam],
@@ -88,10 +109,19 @@ function ShipmentsTable({ statusParam, emptyTitle }: { statusParam: string; empt
 
   const addOrderMutation = useMutation({
     mutationFn: async (params: { shipmentId: string; orderId: string }) =>
-      apiClient.post(`/shipments/${params.shipmentId}/orders/${params.orderId}`),
-    onSuccess: () => {
+      apiClient.post<{ wbWarning: string | null }>(`/shipments/${params.shipmentId}/orders/${params.orderId}`),
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      setWbWarning(res.data.wbWarning);
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async (params: { shipmentId: string; status: string }) =>
+      apiClient.patch(`/shipments/${params.shipmentId}`, { status: params.status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
     },
   });
 
@@ -108,6 +138,7 @@ function ShipmentsTable({ statusParam, emptyTitle }: { statusParam: string; empt
               <p className="text-[12.5px] text-[var(--color-foreground-muted)]">
                 {shipment.warehouse?.name ?? "Склад не указан"} · {shipment.marketplace ? MARKETPLACE_LABELS[shipment.marketplace] : "Разные МП"}
               </p>
+              <p className="mt-1 font-mono text-[12px] text-[var(--color-foreground-muted)]">ШК короба: {shipment.barcode}</p>
             </div>
             <div className="flex items-center gap-4 text-[12.5px] text-[var(--color-foreground-muted)]">
               <span>{shipment.orders.length} заказов</span>
@@ -116,6 +147,25 @@ function ShipmentsTable({ statusParam, emptyTitle }: { statusParam: string; empt
               <span>{shipment.totalVolumeL ?? 0} л</span>
             </div>
             <Badge variant={SHIPMENT_STATUS_VARIANT[shipment.status]}>{SHIPMENT_STATUS_LABELS[shipment.status]}</Badge>
+            <Select
+              value={shipment.status}
+              disabled={updateStatusMutation.isPending}
+              onChange={(e) => updateStatusMutation.mutate({ shipmentId: shipment.id, status: e.target.value })}
+              className="w-auto"
+              title="Изменить статус отгрузки"
+            >
+              {Object.entries(SHIPMENT_STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            {shipment.wbSupplyId ? <WbShippingMethodDialog shipmentId={shipment.id} currentPointId={shipment.wbShippingPointId} /> : null}
+            <PrintShipmentBarcodeDialog
+              shipmentId={shipment.id}
+              barcode={shipment.barcode}
+              title={`Отгрузка ${formatDateTime(shipment.scheduledAt)} · ${shipment.warehouse?.name ?? "Склад не указан"}`}
+            />
             <Button size="sm" variant="secondary" onClick={() => setExpandedId(expandedId === shipment.id ? null : shipment.id)}>
               {expandedId === shipment.id ? "Скрыть" : "Заказы"}
             </Button>
@@ -134,9 +184,13 @@ function ShipmentsTable({ statusParam, emptyTitle }: { statusParam: string; empt
               )}
               <AddOrderRow
                 options={(readyOrders ?? []).filter((o: any) => !shipment.orders.some((so) => so.id === o.id))}
-                onAdd={(orderId) => addOrderMutation.mutate({ shipmentId: shipment.id, orderId })}
+                onAdd={(orderId) => {
+                  setWbWarning(null);
+                  addOrderMutation.mutate({ shipmentId: shipment.id, orderId });
+                }}
                 pending={addOrderMutation.isPending}
               />
+              {wbWarning ? <p className="mt-2 text-[12.5px] text-[var(--color-warning)]">Не синхронизировано с WB: {wbWarning}</p> : null}
             </div>
           )}
         </Card>
@@ -179,92 +233,3 @@ function AddOrderRow({
   );
 }
 
-function CreateShipmentDialog() {
-  const [open, setOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const queryClient = useQueryClient();
-
-  const { data: warehouses } = useQuery({
-    queryKey: ["warehouses"],
-    queryFn: async () => (await apiClient.get("/warehouses")).data,
-    enabled: open,
-  });
-
-  const [form, setForm] = useState({ warehouseId: "", scheduledAt: "", transport: "", driverName: "" });
-
-  const mutation = useMutation({
-    mutationFn: async () =>
-      apiClient.post("/shipments", {
-        marketplace: "WILDBERRIES",
-        warehouseId: form.warehouseId || undefined,
-        scheduledAt: form.scheduledAt,
-        transport: form.transport || undefined,
-        driverName: form.driverName || undefined,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shipments"] });
-      setOpen(false);
-      setForm({ warehouseId: "", scheduledAt: "", transport: "", driverName: "" });
-    },
-    onError: (err) => setError(apiErrorMessage(err)),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4" />
-          Создать отгрузку
-        </Button>
-      </DialogTrigger>
-      <DialogContent title="Новая отгрузка" description="Заказы можно добавить после создания">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setError(null);
-            mutation.mutate();
-          }}
-          className="flex flex-col gap-4"
-        >
-          <div>
-            <Label htmlFor="scheduledAt">Дата и время</Label>
-            <Input
-              id="scheduledAt"
-              type="datetime-local"
-              required
-              value={form.scheduledAt}
-              onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))}
-            />
-          </div>
-          <div>
-            <Label htmlFor="warehouseId">Склад</Label>
-            <Select id="warehouseId" value={form.warehouseId} onChange={(e) => setForm((f) => ({ ...f, warehouseId: e.target.value }))}>
-              <option value="">Не указан</option>
-              {warehouses?.map((w: any) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="marketplace">Маркетплейс</Label>
-            <Input id="marketplace" value="Wildberries" disabled />
-          </div>
-          <div>
-            <Label htmlFor="transport">Транспорт</Label>
-            <Input id="transport" value={form.transport} onChange={(e) => setForm((f) => ({ ...f, transport: e.target.value }))} />
-          </div>
-          <div>
-            <Label htmlFor="driverName">Водитель</Label>
-            <Input id="driverName" value={form.driverName} onChange={(e) => setForm((f) => ({ ...f, driverName: e.target.value }))} />
-          </div>
-          {error ? <p className="text-[13px] text-[var(--color-danger)]">{error}</p> : null}
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Создаём…" : "Создать отгрузку"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
