@@ -9,8 +9,10 @@ import { Card } from "@/components/ui/card";
 import { Select, Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
+import { Toolbar } from "@/components/ui/toolbar";
 import { Badge } from "@/components/ui/badge";
 import { LoadingBlock } from "@/components/ui/spinner";
+import { Users, PackageCheck, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PackingOrder {
@@ -152,31 +154,38 @@ export default function FbsPackingPage() {
     <div onClick={() => inputRef.current?.focus()}>
       <PageHeader title="FBS · Упаковка" description="Сканируйте уже собранные товары, чтобы упаковать заказ" />
 
-      <div className="mb-5 max-w-xs">
-        <Label htmlFor="client-select">Клиент</Label>
-        <Select
-          id="client-select"
-          value={clientId}
-          onChange={(e) => {
-            setClientId(e.target.value);
-            setScanError(null);
-          }}
-        >
-          <option value="">Все клиенты</option>
-          {clients?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
-      </div>
+      <Toolbar>
+        <div className="w-64">
+          <Label htmlFor="client-select" className="mb-1 flex items-center gap-1.5">
+            <Users className="h-3 w-3" /> Клиент
+          </Label>
+          <Select
+            id="client-select"
+            value={clientId}
+            onChange={(e) => {
+              setClientId(e.target.value);
+              setScanError(null);
+            }}
+            className="border-none bg-[var(--color-surface)]"
+          >
+            <option value="">Все клиенты</option>
+            {clients?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </Toolbar>
 
       {!clientId ? (
-        <EmptyState title="Выберите клиента" description="После выбора появится список собранных товаров" />
+        <EmptyState icon={Users} title="Выберите клиента" description="После выбора появится список собранных товаров" />
       ) : (
         <>
           <Card className="mb-5 p-5">
-            <Label htmlFor="scan-input">Сканируйте штрихкод</Label>
+            <Label htmlFor="scan-input" className="flex items-center gap-1.5">
+              <ScanLine className="h-3.5 w-3.5" /> Сканируйте штрихкод
+            </Label>
             <Input
               id="scan-input"
               ref={inputRef}
@@ -197,8 +206,11 @@ export default function FbsPackingPage() {
 
           {ordersReadyForPackaging.length > 0 && (
             <Card className="mb-5 p-5">
-              <p className="mb-3 text-[13px] font-medium">Заказы, готовые к упаковке — выберите тип упаковки</p>
-              <div className="flex flex-col gap-2">
+              <p className="mb-3 flex items-center gap-1.5 text-[13px] font-medium">
+                <PackageCheck className="h-3.5 w-3.5 text-[var(--color-success)]" />
+                Заказы, готовые к упаковке — выберите тип упаковки
+              </p>
+              <div className="flex flex-col gap-2.5">
                 {ordersReadyForPackaging.map((order) => (
                   <PackagingRow
                     key={order.id}
@@ -215,7 +227,7 @@ export default function FbsPackingPage() {
           {isLoading ? (
             <LoadingBlock />
           ) : flatItems.length === 0 ? (
-            <EmptyState title="Нет собранных товаров" description="Сначала соберите заказы на экране сборки" />
+            <EmptyState icon={PackageCheck} title="Нет собранных товаров" description="Сначала соберите заказы на экране сборки" />
           ) : (
             <Card className="overflow-hidden">
               <Table>

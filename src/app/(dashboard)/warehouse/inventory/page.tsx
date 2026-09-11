@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, ClipboardCheck } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Client } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
@@ -52,7 +52,7 @@ export default function InventoryPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="Инвентаризаций пока не было" />
+          <EmptyState icon={ClipboardCheck} title="Инвентаризаций пока не было" description="Создайте первую, чтобы сверить остатки" />
         ) : (
           <Table>
             <Thead>

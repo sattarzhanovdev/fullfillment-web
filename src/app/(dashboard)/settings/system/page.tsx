@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, Sliders } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Subcard } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 
@@ -50,7 +51,10 @@ export default function SystemSettingsPage() {
       <div className="flex flex-col gap-5 max-w-xl">
         <Card>
           <CardHeader>
-            <CardTitle>Название компании</CardTitle>
+            <CardTitle className="flex items-center gap-1.5">
+              <Building2 className="h-4 w-4 text-[var(--color-foreground-muted)]" />
+              Название компании
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <form
@@ -80,29 +84,32 @@ export default function SystemSettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Текущие параметры</CardTitle>
+            <CardTitle className="flex items-center gap-1.5">
+              <Sliders className="h-4 w-4 text-[var(--color-foreground-muted)]" />
+              Текущие параметры
+            </CardTitle>
             <CardDescription>Буфер и лимит долга настраиваются в разделе «Цены»</CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             {isLoading || !data ? (
               <p className="text-[13.5px] text-[var(--color-foreground-muted)]">Загрузка…</p>
             ) : (
-              <dl className="flex flex-col gap-2.5 text-[13.5px]">
-                <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2.5">
+              <Subcard className="flex flex-col divide-y divide-[var(--color-border)] text-[13.5px]">
+                <div className="flex items-center justify-between px-3.5 py-2.5">
                   <dt className="text-[var(--color-foreground-muted)]">Общий буфер витрины</dt>
                   <dd className="font-medium">{data.general_buffer_percent ?? 0}%</dd>
                 </div>
-                <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2.5">
+                <div className="flex items-center justify-between px-3.5 py-2.5">
                   <dt className="text-[var(--color-foreground-muted)]">Общий лимит задолженности</dt>
                   <dd className="font-medium">{data.general_debt_limit ?? 0} ₽</dd>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between px-3.5 py-2.5">
                   <dt className="text-[var(--color-foreground-muted)]">Блокируемые операции при долге</dt>
                   <dd className="font-medium">
                     {(data.debt_blocked_operations ?? []).map((op) => OP_LABELS[op] ?? op).join(", ") || "—"}
                   </dd>
                 </div>
-              </dl>
+              </Subcard>
             )}
           </CardContent>
         </Card>

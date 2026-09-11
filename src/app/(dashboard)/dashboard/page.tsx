@@ -8,9 +8,12 @@ import {
   ArrowRight,
   ClipboardCheck,
   ClipboardList,
+  PackageCheck,
   PackageOpen,
   PackagePlus,
+  ShoppingCart,
   Truck,
+  Wallet,
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { apiClient } from "@/lib/api-client";
@@ -142,12 +145,12 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--color-border)] pb-5">
         <div>
-          <h1 className="text-[22px] font-semibold tracking-tight">
+          <h1 className="text-[23px] font-semibold tracking-tight">
             {greeting()}{user ? `, ${user.fullName.split(" ")[0]}` : ""}
           </h1>
-          <p className="mt-1 text-[13.5px] text-[var(--color-foreground-muted)]">
+          <p className="mt-1.5 text-[13.5px] text-[var(--color-foreground-muted)]">
             {new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}
           </p>
         </div>
@@ -168,13 +171,14 @@ export default function DashboardPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-            <StatCard label="Заказов сегодня" value={data.ordersToday} />
-            <StatCard label="Отгружено сегодня" value={data.shippedToday} tone="success" />
-            <StatCard label="Выручка за день" value={formatMoney(data.revenueDay)} tone="success" />
+            <StatCard label="Заказов сегодня" value={data.ordersToday} icon={ShoppingCart} tone="accent" />
+            <StatCard label="Отгружено сегодня" value={data.shippedToday} tone="success" icon={PackageCheck} />
+            <StatCard label="Выручка за день" value={formatMoney(data.revenueDay)} tone="success" icon={Wallet} />
             <StatCard
               label="Требует внимания"
               value={attentionCount}
               tone={attentionCount > 0 ? "danger" : "neutral"}
+              icon={AlertTriangle}
               hint={attentionCount > 0 ? "заказы с проблемами" : "всё в порядке"}
             />
           </div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, PackageSearch, ScanLine, Truck } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -131,7 +131,9 @@ export default function FbsShippingScanPage() {
 
       {!shipmentId ? (
         <Card className="mb-4 p-4">
-          <Label htmlFor="scan-select">Отгрузка не выбрана</Label>
+          <Label htmlFor="scan-select" className="flex items-center gap-1.5">
+            <Truck className="h-3.5 w-3.5" /> Отгрузка не выбрана
+          </Label>
           <p className="mb-3 text-[12.5px] text-[var(--color-foreground-muted)]">
             Отсканируйте штрихкод короба отгрузки сканером, либо выберите вручную
           </p>
@@ -149,8 +151,11 @@ export default function FbsShippingScanPage() {
         </Card>
       ) : null}
 
-      <Card className="mb-4 p-4">
-        <Label htmlFor="scan">Сканирование</Label>
+      <Card className="relative mb-4 overflow-hidden p-4 pl-5">
+        <span className="absolute inset-y-0 left-0 w-[3px] bg-[var(--color-accent)]" aria-hidden />
+        <Label htmlFor="scan" className="flex items-center gap-1.5">
+          <ScanLine className="h-3.5 w-3.5 text-[var(--color-accent)]" /> Сканирование
+        </Label>
         <ScanInput id="scan" onScan={handleScan} disabled={pending} />
         {feedback ? (
           <p
@@ -192,7 +197,7 @@ export default function FbsShippingScanPage() {
       ) : null}
 
       {!shipmentId ? (
-        <EmptyState title="Выберите отгрузку, чтобы начать сканирование товаров" />
+        <EmptyState icon={Truck} title="Выберите отгрузку, чтобы начать сканирование товаров" />
       ) : shipmentLoading || !shipment ? (
         <LoadingBlock />
       ) : (
@@ -209,7 +214,7 @@ export default function FbsShippingScanPage() {
               {shipment.orders.length === 0 ? (
                 <Tr>
                   <Td colSpan={3}>
-                    <EmptyState title="Заказы ещё не добавлены — сканируйте товары" />
+                    <EmptyState icon={PackageSearch} title="Заказы ещё не добавлены — сканируйте товары" />
                   </Td>
                 </Tr>
               ) : (

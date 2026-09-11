@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Users } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Client } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
@@ -48,7 +49,7 @@ export default function ClientPricesPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !clients || clients.length === 0 ? (
-          <EmptyState title="Клиентов пока нет" />
+          <EmptyState icon={Users} title="Клиентов пока нет" description="Добавьте клиентов, чтобы настроить персональные цены" />
         ) : (
           <Table>
             <Thead>

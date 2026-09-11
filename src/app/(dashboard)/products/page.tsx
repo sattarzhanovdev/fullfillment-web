@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
+import { Toolbar } from "@/components/ui/toolbar";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { Dialog, DialogContent, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -72,23 +73,19 @@ export default function ProductsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Товары"
-        description={data ? `Карточки товаров всех клиентов · показано ${filtered.length} из ${data.length}` : "Карточки товаров всех клиентов"}
-        actions={<CreateProductDialog />}
-      />
+      <PageHeader title="Товары" description="Карточки товаров всех клиентов" actions={<CreateProductDialog />} />
 
-      <div className="mb-4 flex flex-wrap gap-3">
+      <Toolbar>
         <div className="relative w-64">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-foreground-muted)]" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Артикул / штрихкод / название"
-            className="pl-9"
+            className="border-none bg-[var(--color-surface)] pl-9"
           />
         </div>
-        <Select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-56">
+        <Select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-56 border-none bg-[var(--color-surface)]">
           <option value="">Все клиенты</option>
           {clients?.map((c) => (
             <option key={c.id} value={c.id}>
@@ -96,20 +93,29 @@ export default function ProductsPage() {
             </option>
           ))}
         </Select>
-        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="w-48">
+        <Select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          className="w-48 border-none bg-[var(--color-surface)]"
+        >
           {(Object.keys(STATUS_FILTER_LABELS) as StatusFilter[]).map((key) => (
             <option key={key} value={key}>
               {STATUS_FILTER_LABELS[key]}
             </option>
           ))}
         </Select>
-      </div>
+        {data ? (
+          <span className="ml-auto shrink-0 text-[12.5px] text-[var(--color-foreground-muted)]">
+            Показано {filtered.length} из {data.length}
+          </span>
+        ) : null}
+      </Toolbar>
 
       <Card className="overflow-hidden">
         {isLoading ? (
           <LoadingBlock />
         ) : filtered.length === 0 ? (
-          <EmptyState title="Товары не найдены" />
+          <EmptyState icon={Package} title="Товары не найдены" description="Измените фильтры или добавьте новый товар" />
         ) : (
           <Table>
             <Thead>

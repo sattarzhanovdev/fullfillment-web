@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CircleCheck } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -33,7 +34,7 @@ export default function NeedsPricePage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="Очередь пуста" description="Все товары можно рассчитать по текущим правилам" />
+          <EmptyState icon={CircleCheck} title="Очередь пуста" description="Все товары можно рассчитать по текущим правилам" />
         ) : (
           <Table>
             <Thead>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BellOff, CheckCheck } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -62,6 +63,7 @@ export default function NotificationsPage() {
         description="Новые заказы, дедлайны, расхождения и другие события системы"
         actions={
           <Button variant="secondary" size="sm" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
+            <CheckCheck className="h-4 w-4" />
             Прочитать всё
           </Button>
         }
@@ -71,7 +73,7 @@ export default function NotificationsPage() {
         <LoadingBlock />
       ) : !data || data.length === 0 ? (
         <Card>
-          <EmptyState title="Уведомлений нет" />
+          <EmptyState icon={BellOff} title="Уведомлений нет" description="Новые события появятся здесь" />
         </Card>
       ) : (
         <div className="flex flex-col gap-2">

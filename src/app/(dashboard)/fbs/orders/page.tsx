@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, PackageSearch } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Client, Product } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
@@ -95,7 +95,7 @@ function OrdersTable({ group, archived, emptyTitle }: { group?: string; archived
   });
 
   if (isLoading) return <LoadingBlock />;
-  if (!data || data.length === 0) return <EmptyState title={emptyTitle} />;
+  if (!data || data.length === 0) return <EmptyState icon={PackageSearch} title={emptyTitle} description="Список обновится автоматически, когда появятся заказы" />;
 
   return (
     <Card className="overflow-hidden">

@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label, Select } from "@/components/ui/input";
-import { Table, Thead, Th, Tr, Td } from "@/components/ui/table";
+import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { ScanInput } from "@/components/scanner/scan-input";
@@ -79,7 +79,10 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div>
-      <Link href="/receiving" className="mb-3 inline-flex items-center gap-1 text-[13px] text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]">
+      <Link
+        href="/receiving"
+        className="mb-3 inline-flex items-center gap-1 rounded-[var(--radius-pill)] py-1 text-[13px] font-medium text-[var(--color-foreground-muted)] transition-colors hover:text-[var(--color-accent)]"
+      >
         <ArrowLeft className="h-3.5 w-3.5" /> Приёмки
       </Link>
       <PageHeader
@@ -112,16 +115,19 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex-1">
             <Label htmlFor="scan">Сканирование</Label>
             <ScanInput id="scan" onScan={(code) => scanMutation.mutate(code)} disabled={!cellId || scanMutation.isPending} />
+            {feedback ? (
+              <p className={cn("mt-2 text-[13px] font-medium", feedback.type === "ok" ? "text-[var(--color-success)]" : "text-[var(--color-danger)]")}>
+                {feedback.message}
+              </p>
+            ) : null}
           </div>
         </Card>
       )}
-      {feedback ? (
-        <p className={cn("mb-4 text-[13px]", feedback.type === "ok" ? "text-[var(--color-success)]" : "text-[var(--color-danger)]")}>
-          {feedback.message}
-        </p>
-      ) : null}
 
       <Card className="overflow-hidden">
+        {receipt.items.length === 0 ? (
+          <EmptyState title="Позиций пока нет" description="Отсканируйте товар, чтобы добавить его в приёмку" />
+        ) : (
         <Table>
           <Thead>
             <tr>
@@ -148,6 +154,7 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
             ))}
           </tbody>
         </Table>
+        )}
       </Card>
     </div>
   );

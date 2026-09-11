@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, MousePointerClick, Upload } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Client } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
+import { Toolbar } from "@/components/ui/toolbar";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { LoadingBlock } from "@/components/ui/spinner";
@@ -71,10 +73,15 @@ export default function DocumentsPage() {
     <div>
       <PageHeader title="Документы" description="Договоры, акты, счета и накладные по клиентам" />
 
-      <Card className="mb-4">
-        <CardContent>
-          <Label htmlFor="client">Клиент</Label>
-          <Select id="client" value={clientId} onChange={(e) => setClientId(e.target.value)} className="max-w-sm">
+      <Toolbar>
+        <div className="w-64">
+          <Label htmlFor="client" className="sr-only">Клиент</Label>
+          <Select
+            id="client"
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            className="border-none bg-[var(--color-surface)]"
+          >
             <option value="">Выберите клиента</option>
             {clients?.map((c) => (
               <option key={c.id} value={c.id}>
@@ -82,13 +89,19 @@ export default function DocumentsPage() {
               </option>
             ))}
           </Select>
-        </CardContent>
-      </Card>
+        </div>
+      </Toolbar>
 
       {clientId ? (
         <div className="flex flex-col gap-4">
           <Card>
-            <CardContent>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-1.5">
+                <Upload className="h-4 w-4 text-[var(--color-foreground-muted)]" />
+                Загрузить документ
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -121,7 +134,7 @@ export default function DocumentsPage() {
             {isLoading ? (
               <LoadingBlock />
             ) : !documents || documents.length === 0 ? (
-              <EmptyState title="Документов пока нет" />
+              <EmptyState icon={FileText} title="Документов пока нет" description="Загрузите первый документ для этого клиента" />
             ) : (
               <Table>
                 <Thead>
@@ -155,7 +168,9 @@ export default function DocumentsPage() {
           </Card>
         </div>
       ) : (
-        <EmptyState title="Выберите клиента" description="Чтобы увидеть и загрузить документы" />
+        <Card>
+          <EmptyState icon={MousePointerClick} title="Выберите клиента" description="Чтобы увидеть и загрузить документы" />
+        </Card>
       )}
     </div>
   );

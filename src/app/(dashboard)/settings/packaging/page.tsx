@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -120,7 +120,7 @@ export default function PackagingSettingsPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="Упаковок пока нет" />
+          <EmptyState icon={Package} title="Упаковок пока нет" description="Добавьте пакеты, коробки или паллеты для расчёта стоимости" />
         ) : (
           <Table>
             <Thead>

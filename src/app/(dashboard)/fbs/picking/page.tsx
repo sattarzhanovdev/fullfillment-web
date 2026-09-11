@@ -9,9 +9,11 @@ import { Card } from "@/components/ui/card";
 import { Select, Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
+import { Toolbar } from "@/components/ui/toolbar";
 import { Badge } from "@/components/ui/badge";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { OrderLabelCard } from "@/components/scanner/order-label-card";
+import { Users, ClipboardList, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PickableItem {
@@ -141,29 +143,36 @@ export default function FbsPickingPage() {
     <div onClick={() => inputRef.current?.focus()}>
       <PageHeader title="FBS · Сборка" description="Выберите клиента и сканируйте товары по одному" />
 
-      <div className="mb-5 max-w-xs">
-        <Label htmlFor="client-select">Клиент</Label>
-        <Select
-          id="client-select"
-          value={clientId}
-          onChange={(e) => {
-            setClientId(e.target.value);
-            setScanError(null);
-          }}
-        >
-          <option value="">Все клиенты</option>
-          {clients?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
-      </div>
+      <Toolbar>
+        <div className="w-64">
+          <Label htmlFor="client-select" className="mb-1 flex items-center gap-1.5">
+            <Users className="h-3 w-3" /> Клиент
+          </Label>
+          <Select
+            id="client-select"
+            value={clientId}
+            onChange={(e) => {
+              setClientId(e.target.value);
+              setScanError(null);
+            }}
+            className="border-none bg-[var(--color-surface)]"
+          >
+            <option value="">Все клиенты</option>
+            {clients?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </Toolbar>
 
       {clientId ? (
         <>
           <Card className="mb-5 p-5">
-            <Label htmlFor="scan-input">Сканируйте штрихкод</Label>
+            <Label htmlFor="scan-input" className="flex items-center gap-1.5">
+              <ScanLine className="h-3.5 w-3.5" /> Сканируйте штрихкод
+            </Label>
             <Input
               id="scan-input"
               ref={inputRef}
@@ -189,7 +198,7 @@ export default function FbsPickingPage() {
           {isLoading ? (
             <LoadingBlock />
           ) : !sorted || sorted.length === 0 ? (
-            <EmptyState title="Нет товаров для сборки" description="У этого клиента сейчас нет активных заказов" />
+            <EmptyState icon={ClipboardList} title="Нет товаров для сборки" description="У этого клиента сейчас нет активных заказов" />
           ) : (
             <Card className="overflow-hidden">
               <Table>
@@ -253,7 +262,7 @@ export default function FbsPickingPage() {
           )}
         </>
       ) : (
-        <EmptyState title="Выберите клиента" description="После выбора появится список товаров к сборке" />
+        <EmptyState icon={Users} title="Выберите клиента" description="После выбора появится список товаров к сборке" />
       )}
     </div>
   );

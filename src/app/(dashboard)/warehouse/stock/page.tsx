@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Search, PackageSearch } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import type { Client } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
+import { Toolbar } from "@/components/ui/toolbar";
 import { Input, Select } from "@/components/ui/input";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
 import { LoadingBlock } from "@/components/ui/spinner";
@@ -53,12 +54,17 @@ export default function WarehouseStockPage() {
     <div>
       <PageHeader title="Склад · Остатки" description="Физический остаток, резерв и доступное количество по ячейкам" />
 
-      <div className="mb-5 flex flex-wrap gap-3">
+      <Toolbar>
         <div className="relative w-64">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-foreground-muted)]" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Артикул / штрихкод / название" className="pl-9" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Артикул / штрихкод / название"
+            className="border-none bg-[var(--color-surface)] pl-9"
+          />
         </div>
-        <Select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-56">
+        <Select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-56 border-none bg-[var(--color-surface)]">
           <option value="">Все клиенты</option>
           {clients?.map((c) => (
             <option key={c.id} value={c.id}>
@@ -66,13 +72,16 @@ export default function WarehouseStockPage() {
             </option>
           ))}
         </Select>
-      </div>
+        {data ? (
+          <span className="ml-auto shrink-0 text-[12.5px] text-[var(--color-foreground-muted)]">Позиций: {filtered.length}</span>
+        ) : null}
+      </Toolbar>
 
       <Card className="overflow-hidden">
         {isLoading ? (
           <LoadingBlock />
         ) : filtered.length === 0 ? (
-          <EmptyState title="Остатков не найдено" />
+          <EmptyState icon={PackageSearch} title="Остатков не найдено" description="Измените фильтры или проверьте другого клиента" />
         ) : (
           <Table>
             <Thead>

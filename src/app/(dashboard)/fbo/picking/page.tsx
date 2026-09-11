@@ -7,9 +7,11 @@ import type { Client } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Label, Select } from "@/components/ui/input";
+import { Toolbar } from "@/components/ui/toolbar";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { ScanInput } from "@/components/scanner/scan-input";
+import { ScanLine, PackageSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Supply {
@@ -67,8 +69,8 @@ export default function FboPickingPage() {
     <div>
       <PageHeader title="FBO · Сборка" description="Выберите клиента и поставку, затем сканируйте товары" />
 
-      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 max-w-xl">
-        <div>
+      <Toolbar>
+        <div className="w-56">
           <Label htmlFor="client">Клиент</Label>
           <Select
             id="client"
@@ -77,6 +79,7 @@ export default function FboPickingPage() {
               setClientId(e.target.value);
               setSupplyId("");
             }}
+            className="border-none bg-[var(--color-surface)]"
           >
             <option value="">Выберите клиента</option>
             {clients?.map((c) => (
@@ -86,9 +89,15 @@ export default function FboPickingPage() {
             ))}
           </Select>
         </div>
-        <div>
+        <div className="w-56">
           <Label htmlFor="supply">Поставка</Label>
-          <Select id="supply" value={supplyId} onChange={(e) => setSupplyId(e.target.value)} disabled={!clientId}>
+          <Select
+            id="supply"
+            value={supplyId}
+            onChange={(e) => setSupplyId(e.target.value)}
+            disabled={!clientId}
+            className="border-none bg-[var(--color-surface)]"
+          >
             <option value="">Выберите поставку</option>
             {supplies?.map((s) => (
               <option key={s.id} value={s.id}>
@@ -97,16 +106,19 @@ export default function FboPickingPage() {
             ))}
           </Select>
         </div>
-      </div>
+      </Toolbar>
 
       {!supplyId ? (
-        <EmptyState title="Выберите поставку для сборки" />
+        <EmptyState icon={PackageSearch} title="Выберите поставку для сборки" />
       ) : supplyLoading || !supply ? (
         <LoadingBlock />
       ) : (
         <>
-          <Card className="mb-4 p-4">
-            <Label htmlFor="scan">Сканирование</Label>
+          <Card className="relative mb-4 overflow-hidden p-4 pl-5">
+            <span className="absolute inset-y-0 left-0 w-[3px] bg-[var(--color-accent)]" aria-hidden />
+            <Label htmlFor="scan" className="flex items-center gap-1.5">
+              <ScanLine className="h-3.5 w-3.5 text-[var(--color-accent)]" /> Сканирование
+            </Label>
             <ScanInput id="scan" onScan={(code) => scanMutation.mutate(code)} disabled={scanMutation.isPending} />
             {feedback ? (
               <p className={cn("mt-2 text-[13px]", feedback.type === "ok" ? "text-[var(--color-success)]" : "text-[var(--color-danger)]")}>

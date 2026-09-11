@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Info } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, Subcard } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { LoadingBlock } from "@/components/ui/spinner";
@@ -88,11 +89,14 @@ export default function GeneralPricePage() {
                 />
               </div>
 
-              <p className="rounded-[var(--radius-control)] bg-[var(--color-surface-2)] px-3.5 py-3 text-[12.5px] leading-relaxed text-[var(--color-foreground-muted)]">
-                Цена = цена первого литра + (литры − 1) × цена следующего литра.
-                <br />
-                Объём округляется вверх до целого литра (минимум 1 л): например, 0,7 л → 1 л, 1,2 л → 2 л, 2,3 л → 3 л.
-              </p>
+              <Subcard className="flex items-start gap-2.5 px-3.5 py-3 text-[12.5px] leading-relaxed text-[var(--color-foreground-muted)]">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-accent)]" />
+                <span>
+                  Цена = цена первого литра + (литры − 1) × цена следующего литра.
+                  <br />
+                  Объём округляется вверх до целого литра (минимум 1 л): например, 0,7 л → 1 л, 1,2 л → 2 л, 2,3 л → 3 л.
+                </span>
+              </Subcard>
 
               {error ? <p className="text-[13px] text-[var(--color-danger)]">{error}</p> : null}
               {saved ? <p className="text-[13px] text-[var(--color-success)]">Сохранено</p> : null}

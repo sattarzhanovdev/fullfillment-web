@@ -3,11 +3,12 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, ShoppingCart, PackagePlus, Wallet, AlertCircle, FileText, PackageOpen, Store, TrendingUp, BarChart3 } from "lucide-react";
 import { Area, BarChart, Bar, Cell, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -234,7 +235,7 @@ function ReceivingTab({ clientId }: { clientId: string }) {
   });
 
   if (isLoading) return <LoadingBlock />;
-  if (!data || data.length === 0) return <EmptyState title="Приёмок пока не было" />;
+  if (!data || data.length === 0) return <EmptyState icon={PackageOpen} title="Приёмок пока не было" description="Здесь появится история приёмок этого клиента" />;
 
   return (
     <Card className="overflow-hidden">
@@ -332,7 +333,7 @@ function DocumentsTab({ clientId }: { clientId: string }) {
       {isLoading ? (
         <LoadingBlock />
       ) : !data || data.length === 0 ? (
-        <EmptyState title="Документов пока нет" />
+        <EmptyState icon={FileText} title="Документов пока нет" description="Загрузите первый документ по этому клиенту" />
       ) : (
         <Card className="overflow-hidden">
           <Table>
@@ -403,22 +404,15 @@ function AnalyticsTab({ clientId }: { clientId: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card className="p-4">
-          <div className="text-[12px] text-[var(--color-foreground-muted)]">Заказов</div>
-          <div className="mt-1 text-[22px] font-semibold">{data.ordersCount}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-[12px] text-[var(--color-foreground-muted)]">FBO поставок</div>
-          <div className="mt-1 text-[22px] font-semibold">{data.fboCount}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-[12px] text-[var(--color-foreground-muted)]">Выручка</div>
-          <div className="mt-1 text-[22px] font-semibold">{formatMoney(data.revenue)}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-[12px] text-[var(--color-foreground-muted)]">Задолженность</div>
-          <div className="mt-1 text-[22px] font-semibold">{formatMoney(data.debt)}</div>
-        </Card>
+        <StatCard label="Заказов" value={data.ordersCount} icon={ShoppingCart} tone="accent" />
+        <StatCard label="FBO поставок" value={data.fboCount} icon={PackagePlus} tone="accent" />
+        <StatCard label="Выручка" value={formatMoney(data.revenue)} icon={Wallet} tone="success" />
+        <StatCard
+          label="Задолженность"
+          value={formatMoney(data.debt)}
+          icon={AlertCircle}
+          tone={Number(data.debt) > 0 ? "warning" : "neutral"}
+        />
       </div>
 
       <Card>
@@ -427,7 +421,7 @@ function AnalyticsTab({ clientId }: { clientId: string }) {
         </CardHeader>
         <CardContent className="pt-2">
           {timeSeries.length === 0 ? (
-            <EmptyState title="Нет данных за период" />
+            <EmptyState icon={TrendingUp} title="Нет данных за период" />
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <ComposedChart data={timeSeries} margin={{ left: -10 }}>
@@ -469,7 +463,7 @@ function AnalyticsTab({ clientId }: { clientId: string }) {
         </CardHeader>
         <CardContent className="pt-2">
           {topProducts.length === 0 ? (
-            <EmptyState title="Нет данных за период" />
+            <EmptyState icon={BarChart3} title="Нет данных за период" />
           ) : (
             <ResponsiveContainer width="100%" height={Math.max(160, topProducts.length * 34)}>
               <BarChart data={topProducts} layout="vertical" margin={{ left: 8 }}>
@@ -544,7 +538,7 @@ function MarketplacesTab({ clientId, links }: { clientId: string; links: ClientD
       </Card>
 
       {links.length === 0 ? (
-        <EmptyState title="Интеграции не настроены" />
+        <EmptyState icon={Store} title="Интеграции не настроены" description="Подключите маркетплейс, чтобы синхронизировать заказы" />
       ) : (
         <div className="flex flex-col gap-2">
           {links.map((l) => (

@@ -54,7 +54,7 @@ export default function WarehouseCellsPage() {
       {isLoading ? (
         <LoadingBlock />
       ) : !data || data.length === 0 ? (
-        <EmptyState title="Складов пока нет" description="Создайте первый склад" />
+        <EmptyState icon={WarehouseIcon} title="Складов пока нет" description="Создайте первый склад" />
       ) : (
         <div className="flex flex-col gap-4">
           {data.map((wh) => (
@@ -73,8 +73,10 @@ function WarehouseBlock({ warehouse }: { warehouse: Warehouse }) {
     <Card>
       <CardContent>
         <div className="flex w-full items-center justify-between text-left">
-          <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-2">
-            <WarehouseIcon className="h-4 w-4 text-[var(--color-accent)]" />
+          <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-accent)]/12 text-[var(--color-accent)]">
+              <WarehouseIcon className="h-4 w-4" />
+            </span>
             <span className="text-[14.5px] font-semibold">{warehouse.name}</span>
             {warehouse.address ? <span className="text-[12.5px] text-[var(--color-foreground-muted)]">{warehouse.address}</span> : null}
           </button>
@@ -82,7 +84,7 @@ function WarehouseBlock({ warehouse }: { warehouse: Warehouse }) {
         </div>
 
         {open ? (
-          <div className="mt-4 flex flex-col gap-3 border-l border-[var(--color-border)] pl-4">
+          <div className="mt-4 flex flex-col gap-4 border-l-2 border-[var(--color-border)] pl-4">
             {warehouse.zones.length === 0 ? (
               <p className="text-[12.5px] text-[var(--color-foreground-muted)]">Зон пока нет</p>
             ) : (
@@ -115,7 +117,7 @@ function ZoneBlock({ zone }: { zone: Zone }) {
           {zone.cells.map((cell) => (
             <div
               key={cell.id}
-              className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-[12.5px]"
+              className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-3)] px-3 py-1.5 text-[12.5px] transition-colors hover:border-[var(--color-border-strong)]"
             >
               <span className="font-mono font-medium">{cell.code}</span>
               <span className="ml-1.5 text-[var(--color-foreground-muted)]">

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Printer, TrendingDown, TrendingUp, Trophy } from "lucide-react";
+import { Download, Printer, TrendingDown, TrendingUp, Trophy, Wallet, ShoppingCart, CircleCheck, PackageOpen } from "lucide-react";
 import {
   Area,
   Bar,
@@ -421,22 +421,27 @@ export default function AnalyticsPage() {
                 label="Выручка за период"
                 value={formatMoney(comparisonQuery.data.current.revenue)}
                 tone="success"
+                icon={Wallet}
                 hint={<ChangeBadge pct={comparisonQuery.data.change.revenuePct} />}
               />
               <StatCard
                 label="Заказов за период"
                 value={comparisonQuery.data.current.orders}
+                tone="accent"
+                icon={ShoppingCart}
                 hint={<ChangeBadge pct={comparisonQuery.data.change.ordersPct} />}
               />
               <StatCard
                 label="Текущая задолженность"
                 value={financeQuery.data ? formatMoney(financeQuery.data.currentDebt) : "—"}
                 tone={financeQuery.data?.currentDebt > 0 ? "warning" : "neutral"}
+                icon={Wallet}
               />
               <StatCard
                 label="Дефицит склада"
                 value={warehouseQuery.data?.lowStockCount ?? "—"}
                 tone={warehouseQuery.data?.lowStockCount > 0 ? "danger" : "neutral"}
+                icon={PackageOpen}
               />
             </div>
           )}
@@ -635,7 +640,7 @@ export default function AnalyticsPage() {
                     {lowStockQuery.isLoading ? (
                       <LoadingBlock />
                     ) : !lowStockQuery.data || lowStockQuery.data.length === 0 ? (
-                      <EmptyState title="Дефицита нет" description="Остатки в норме" />
+                      <EmptyState icon={CircleCheck} title="Дефицита нет" description="Остатки в норме" />
                     ) : (
                       <div className="flex flex-col divide-y divide-[var(--color-border)]">
                         {lowStockQuery.data.map((row) => (

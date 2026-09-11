@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowLeftRight, History } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Client, Product } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
@@ -72,7 +72,13 @@ export default function MovementsPage() {
       <PageHeader title="Склад · Перемещения" description="Перенос товара между ячейками" />
 
       <Card className="mb-5">
-        <CardContent>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-1.5">
+            <ArrowLeftRight className="h-4 w-4 text-[var(--color-accent)]" />
+            Переместить товар
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-3">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -142,7 +148,7 @@ export default function MovementsPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !movements || movements.length === 0 ? (
-          <EmptyState title="Перемещений пока не было" />
+          <EmptyState icon={History} title="Перемещений пока не было" description="История появится после первого переноса товара между ячейками" />
         ) : (
           <Table>
             <Thead>

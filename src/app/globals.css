@@ -5,26 +5,29 @@
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  --color-background: #f5f5f7;
+  --color-background: #e9ecf1;
   --color-surface: #ffffff;
   --color-surface-2: #fbfbfd;
+  --color-surface-3: #eef0f4;
   --color-foreground: #1d1d1f;
   --color-foreground-muted: #6e6e73;
-  --color-border: #d2d2d7;
+  --color-border: #d8dae0;
+  --color-border-strong: #c4c7ce;
   --color-accent: #0071e3;
   --color-accent-hover: #0077ed;
   --color-accent-foreground: #ffffff;
-  --color-success: #248a3d;
-  --color-success-bg: #e6f6ea;
+  --color-success: #1f8a3d;
+  --color-success-bg: #e4f5e9;
   --color-warning: #b96a00;
-  --color-warning-bg: #fff2e0;
+  --color-warning-bg: #fff1de;
   --color-danger: #d70015;
-  --color-danger-bg: #fde8e8;
+  --color-danger-bg: #fce6e7;
   --color-reserve: #7c3fc4;
-  --color-reserve-bg: #f1e8fb;
+  --color-reserve-bg: #f0e7fb;
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
-  --shadow-elevated: 0 2px 6px rgba(0, 0, 0, 0.06), 0 16px 40px rgba(0, 0, 0, 0.10);
+  --shadow-card: 0 1px 1px rgba(20, 20, 30, 0.03), 0 4px 10px rgba(20, 20, 30, 0.05), 0 14px 28px rgba(20, 20, 30, 0.06);
+  --shadow-elevated: 0 2px 8px rgba(20, 20, 30, 0.08), 0 20px 48px rgba(20, 20, 30, 0.14);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   --radius-card: 16px;
   --radius-control: 10px;
   --radius-pill: 980px;
@@ -35,9 +38,11 @@
     --color-background: #000000;
     --color-surface: #1c1c1e;
     --color-surface-2: #131314;
+    --color-surface-3: #232326;
     --color-foreground: #f5f5f7;
     --color-foreground-muted: #98989d;
     --color-border: #38383a;
+    --color-border-strong: #48484a;
     --color-accent: #0a84ff;
     --color-accent-hover: #409cff;
     --color-accent-foreground: #ffffff;
@@ -52,6 +57,7 @@
 
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.4);
     --shadow-elevated: 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.5);
+    --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 }
 
@@ -59,9 +65,11 @@
   --color-background: #000000;
   --color-surface: #1c1c1e;
   --color-surface-2: #131314;
+  --color-surface-3: #232326;
   --color-foreground: #f5f5f7;
   --color-foreground-muted: #98989d;
   --color-border: #38383a;
+  --color-border-strong: #48484a;
   --color-accent: #0a84ff;
   --color-accent-hover: #409cff;
   --color-accent-foreground: #ffffff;
@@ -76,15 +84,18 @@
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.4);
   --shadow-elevated: 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.5);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 @theme inline {
   --color-background: var(--color-background);
   --color-surface: var(--color-surface);
   --color-surface-2: var(--color-surface-2);
+  --color-surface-3: var(--color-surface-3);
   --color-foreground: var(--color-foreground);
   --color-foreground-muted: var(--color-foreground-muted);
   --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
   --color-accent: var(--color-accent);
   --color-accent-hover: var(--color-accent-hover);
   --color-accent-foreground: var(--color-accent-foreground);

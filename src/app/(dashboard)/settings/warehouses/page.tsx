@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ArrowRight, Plus, Warehouse as WarehouseIcon } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card } from "@/components/ui/card";
+import { Card, Subcard } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
@@ -92,7 +92,7 @@ export default function WarehousesSettingsPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="Складов пока нет" />
+          <EmptyState icon={WarehouseIcon} title="Складов пока нет" description="Добавьте первый склад, чтобы начать работу" />
         ) : (
           <Table>
             <Thead>
@@ -127,8 +127,11 @@ export default function WarehousesSettingsPage() {
         )}
       </Card>
 
-      <Link href="/warehouse/cells" className="mt-4 inline-block text-[13.5px] text-[var(--color-accent)] hover:underline">
-        Управление зонами и ячейками →
+      <Link href="/warehouse/cells" className="mt-4 block">
+        <Subcard className="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-border)]/40">
+          <span className="text-[13.5px] font-medium text-[var(--color-foreground)]">Управление зонами и ячейками</span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-[var(--color-accent)]" />
+        </Subcard>
       </Link>
     </div>
   );

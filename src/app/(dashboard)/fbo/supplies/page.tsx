@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, PackagePlus } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Client, Product } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
@@ -44,7 +44,7 @@ export default function FboSuppliesPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="Поставок пока нет" description="Создайте первую поставку FBO" />
+          <EmptyState icon={PackagePlus} title="Поставок пока нет" description="Создайте первую поставку FBO" />
         ) : (
           <Table>
             <Thead>

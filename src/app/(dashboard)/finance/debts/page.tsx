@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Wallet } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -47,7 +48,7 @@ export default function DebtsPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="Нет активных клиентов" />
+          <EmptyState icon={Wallet} title="Нет активных клиентов" description="Здесь появится задолженность по клиентам" />
         ) : (
           <Table>
             <Thead>

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card } from "@/components/ui/card";
+import { Card, Subcard } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -186,22 +186,24 @@ export default function CalendarPage() {
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         {selected && (
           <DialogContent title={`Отгрузка ${formatDateTime(selected.scheduledAt)}`}>
-            <div className="flex flex-col gap-3 text-[13.5px]">
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between text-[13.5px]">
                 <span className="text-[var(--color-foreground-muted)]">Статус</span>
                 <Badge variant={statusTone(selected) === "danger" ? "danger" : statusTone(selected) === "success" ? "success" : "neutral"}>
                   {selected.status}
                 </Badge>
               </div>
-              <Row label="Маркетплейс" value={selected.marketplace ? MARKETPLACE_LABELS[selected.marketplace] ?? selected.marketplace : "—"} />
-              <Row label="Склад" value={selected.warehouse?.name ?? "—"} />
-              <Row label="Транспорт" value={selected.transport ?? "—"} />
-              <Row label="Водитель" value={selected.driverName ?? "—"} />
-              <Row label="Коробок" value={selected.boxesCount ?? "—"} />
-              <Row label="Вес, кг" value={selected.totalWeightKg ?? "—"} />
-              <Row label="Объём, л" value={selected.totalVolumeL ?? "—"} />
-              <Row label="FBS-заказов" value={selected.orders.length} />
-              <Row label="FBO-поставок" value={selected.supplies.length} />
+              <Subcard className="flex flex-col divide-y divide-[var(--color-border)] px-3.5">
+                <Row label="Маркетплейс" value={selected.marketplace ? MARKETPLACE_LABELS[selected.marketplace] ?? selected.marketplace : "—"} />
+                <Row label="Склад" value={selected.warehouse?.name ?? "—"} />
+                <Row label="Транспорт" value={selected.transport ?? "—"} />
+                <Row label="Водитель" value={selected.driverName ?? "—"} />
+                <Row label="Коробок" value={selected.boxesCount ?? "—"} />
+                <Row label="Вес, кг" value={selected.totalWeightKg ?? "—"} />
+                <Row label="Объём, л" value={selected.totalVolumeL ?? "—"} />
+                <Row label="FBS-заказов" value={selected.orders.length} />
+                <Row label="FBO-поставок" value={selected.supplies.length} />
+              </Subcard>
             </div>
           </DialogContent>
         )}
@@ -212,7 +214,7 @@ export default function CalendarPage() {
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2 last:border-0 last:pb-0">
+    <div className="flex items-center justify-between py-2.5 text-[13.5px]">
       <span className="text-[var(--color-foreground-muted)]">{label}</span>
       <span className="font-medium">{value}</span>
     </div>

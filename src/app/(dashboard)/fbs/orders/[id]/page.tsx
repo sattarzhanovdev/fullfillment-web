@@ -3,10 +3,11 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Flag, Clock, Wallet, User, Printer, History } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -101,23 +102,21 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
         }
       />
 
-      <div className="mb-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card className="p-4">
-          <div className="text-[12px] text-[var(--color-foreground-muted)]">Приоритет</div>
-          <div className="mt-1 text-[16px] font-semibold">{order.priority}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-[12px] text-[var(--color-foreground-muted)]">Дедлайн</div>
-          <div className="mt-1 text-[16px] font-semibold">{order.deadline ? formatDateTime(order.deadline) : "—"}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-[12px] text-[var(--color-foreground-muted)]">Стоимость обработки</div>
-          <div className="mt-1 text-[16px] font-semibold">{order.processingCost ? formatMoney(order.processingCost) : "—"}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-[12px] text-[var(--color-foreground-muted)]">Ответственный</div>
-          <div className="mt-1 text-[16px] font-semibold">{order.assignee?.fullName ?? "—"}</div>
-        </Card>
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <StatCard
+          label="Приоритет"
+          value={order.priority}
+          icon={Flag}
+          tone={order.priority === "URGENT" ? "danger" : order.priority === "HIGH" ? "warning" : "neutral"}
+        />
+        <StatCard label="Дедлайн" value={order.deadline ? formatDateTime(order.deadline) : "—"} icon={Clock} />
+        <StatCard
+          label="Стоимость обработки"
+          value={order.processingCost ? formatMoney(order.processingCost) : "—"}
+          icon={Wallet}
+          tone="success"
+        />
+        <StatCard label="Ответственный" value={order.assignee?.fullName ?? "—"} icon={User} tone="accent" />
       </div>
 
       {error ? (
@@ -126,7 +125,7 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
         </div>
       ) : null}
 
-      <div className="mb-5 grid gap-4 sm:grid-cols-2">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <Card>
           <CardContent>
             <p className="mb-2 text-[13px] font-medium">Изменить статус</p>
@@ -175,7 +174,7 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
         </Card>
       </div>
 
-      <Card className="mb-5 overflow-hidden">
+      <Card className="mb-6 overflow-hidden">
         <Table>
           <Thead>
             <tr>
@@ -206,10 +205,13 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
 
       <Card>
         <CardContent>
-          <p className="mb-3 text-[13px] font-medium">История статусов</p>
-          <div className="flex flex-col gap-2">
+          <p className="mb-3 flex items-center gap-1.5 text-[13px] font-medium">
+            <History className="h-3.5 w-3.5 text-[var(--color-foreground-muted)]" />
+            История статусов
+          </p>
+          <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {order.statusHistory.map((h) => (
-              <div key={h.id} className="flex items-center justify-between border-b border-[var(--color-border)] pb-2 text-[13px] last:border-0">
+              <div key={h.id} className="flex items-center justify-between py-2.5 text-[13px] first:pt-0 last:pb-0">
                 <OrderStatusBadge status={h.status} />
                 <span className="text-[12px] text-[var(--color-foreground-muted)]">{formatDateTime(h.createdAt)}</span>
               </div>

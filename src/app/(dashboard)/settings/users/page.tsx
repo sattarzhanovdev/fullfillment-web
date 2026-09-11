@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Client } from "@/lib/types";
 import type { UserRole } from "@/lib/auth-store";
@@ -50,7 +50,7 @@ export default function UsersSettingsPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="Пользователей пока нет" />
+          <EmptyState icon={Users} title="Пользователей пока нет" description="Создайте первого сотрудника или клиентский аккаунт" />
         ) : (
           <Table>
             <Thead>

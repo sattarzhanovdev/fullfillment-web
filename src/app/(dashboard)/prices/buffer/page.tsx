@@ -5,7 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Product } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Info, Package } from "lucide-react";
+import { Card, CardContent, CardTitle, Subcard } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { LoadingBlock } from "@/components/ui/spinner";
@@ -90,10 +91,13 @@ export default function BufferPage() {
           )}
           {saved ? <p className="mt-2 text-[12.5px] text-[var(--color-success)]">Сохранено</p> : null}
           {error ? <p className="mt-2 text-[12.5px] text-[var(--color-danger)]">{error}</p> : null}
-          <p className="mt-3 text-[12px] text-[var(--color-foreground-muted)]">
-            Приоритет: ручной буфер товара → буфер клиента → общий буфер. Пустое поле у товара/клиента — использовать
-            значение выше по приоритету; ноль — буфер отсутствует.
-          </p>
+          <Subcard className="mt-3 flex items-start gap-2.5 px-3.5 py-3 text-[12px] leading-relaxed text-[var(--color-foreground-muted)]">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-accent)]" />
+            <span>
+              Приоритет: ручной буфер товара → буфер клиента → общий буфер. Пустое поле у товара/клиента — использовать
+              значение выше по приоритету; ноль — буфер отсутствует.
+            </span>
+          </Subcard>
         </CardContent>
       </Card>
 
@@ -102,7 +106,7 @@ export default function BufferPage() {
         {productsLoading ? (
           <LoadingBlock />
         ) : !products || products.length === 0 ? (
-          <EmptyState title="Товаров нет" />
+          <EmptyState icon={Package} title="Товаров нет" description="Добавьте товары, чтобы настроить буфер витрины" />
         ) : (
           <Table className="mt-3">
             <Thead>

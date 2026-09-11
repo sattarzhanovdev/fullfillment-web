@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/input";
-import { Table, Thead, Th, Tr, Td } from "@/components/ui/table";
+import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { ScanInput } from "@/components/scanner/scan-input";
@@ -68,7 +68,10 @@ export default function InventoryDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div>
-      <Link href="/warehouse/inventory" className="mb-3 inline-flex items-center gap-1 text-[13px] text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]">
+      <Link
+        href="/warehouse/inventory"
+        className="mb-3 inline-flex items-center gap-1 rounded-[var(--radius-pill)] py-1 text-[13px] font-medium text-[var(--color-foreground-muted)] transition-colors hover:text-[var(--color-accent)]"
+      >
         <ArrowLeft className="h-3.5 w-3.5" /> Инвентаризации
       </Link>
       <PageHeader
@@ -99,6 +102,9 @@ export default function InventoryDetailPage({ params }: { params: Promise<{ id: 
       )}
 
       <Card className="overflow-hidden">
+        {inventory.lines.length === 0 ? (
+          <EmptyState title="Позиций пока нет" description="Появятся по мере сканирования товаров" />
+        ) : (
         <Table>
           <Thead>
             <tr>
@@ -131,6 +137,7 @@ export default function InventoryDetailPage({ params }: { params: Promise<{ id: 
             ))}
           </tbody>
         </Table>
+        )}
       </Card>
     </div>
   );

@@ -1,10 +1,11 @@
 "use client";
 
 import { useQueries, useQuery } from "@tanstack/react-query";
+import { Plug, Unplug } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import type { Client } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Subcard } from "@/components/ui/card";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
@@ -63,13 +64,20 @@ export default function IntegrationsSettingsPage() {
           <CardDescription>Управление ключами API — в карточке каждого клиента</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-3 pt-0">
-          <div className="rounded-[var(--radius-control)] border border-[var(--color-border)] p-3.5">
-            <p className="text-[13.5px] font-medium">Wildberries API</p>
-            <p className="mt-1 text-[12.5px] text-[var(--color-foreground-muted)]">https://suppliers-api.wildberries.ru</p>
+          <Subcard className="p-3.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[13.5px] font-medium">Wildberries API</p>
+                <p className="mt-1 text-[12.5px] text-[var(--color-foreground-muted)]">https://suppliers-api.wildberries.ru</p>
+              </div>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-warning-bg)] text-[var(--color-warning)]">
+                <Plug className="h-4 w-4" />
+              </span>
+            </div>
             <Badge variant="warning" className="mt-2">
               Заглушка — ожидает реальных ключей
             </Badge>
-          </div>
+          </Subcard>
         </CardContent>
       </Card>
 
@@ -77,7 +85,7 @@ export default function IntegrationsSettingsPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : rows.length === 0 ? (
-          <EmptyState title="Интеграции не настроены" description="Подключите маркетплейс в карточке клиента" />
+          <EmptyState icon={Unplug} title="Интеграции не настроены" description="Подключите маркетплейс в карточке клиента" />
         ) : (
           <Table>
             <Thead>

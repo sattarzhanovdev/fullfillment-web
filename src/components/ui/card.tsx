@@ -5,7 +5,20 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        "rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]",
+        "rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card),var(--shadow-inset)]",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/** Карточка внутри карточки (статистика, дочерние блоки) — отличается тоном, чтобы не сливаться с родителем. */
+export function Subcard({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface-3)]",
         className,
       )}
       {...props}

@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, PackageCheck, Boxes, History } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -122,7 +122,9 @@ export default function SupplyDetailPage({ params }: { params: Promise<{ id: str
         <div className="flex flex-col gap-4">
           <Card>
             <CardContent className="flex flex-col gap-3">
-              <Label htmlFor="status">Изменить статус</Label>
+              <Label htmlFor="status" className="flex items-center gap-1.5">
+                <PackageCheck className="h-3.5 w-3.5" /> Изменить статус
+              </Label>
               <Select
                 id="status"
                 value={supply.status}
@@ -148,6 +150,9 @@ export default function SupplyDetailPage({ params }: { params: Promise<{ id: str
                 }}
                 className="flex flex-col gap-3"
               >
+                <p className="flex items-center gap-1.5 text-[13px] font-medium">
+                  <Boxes className="h-3.5 w-3.5" /> Грузоместа
+                </p>
                 <div>
                   <Label htmlFor="boxes">Коробки</Label>
                   <Input id="boxes" type="number" min={0} value={boxes || supply.boxesCount || 0} onChange={(e) => setBoxes(e.target.value)} />
@@ -165,13 +170,15 @@ export default function SupplyDetailPage({ params }: { params: Promise<{ id: str
 
           <Card>
             <CardContent>
-              <p className="mb-2 text-[13px] font-medium">История статусов</p>
-              <div className="flex flex-col gap-2">
+              <p className="mb-2 flex items-center gap-1.5 text-[13px] font-medium">
+                <History className="h-3.5 w-3.5" /> История статусов
+              </p>
+              <div className="flex flex-col divide-y divide-[var(--color-border)]">
                 {supply.statusHistory.length === 0 ? (
                   <p className="text-[12.5px] text-[var(--color-foreground-muted)]">Пока нет изменений</p>
                 ) : (
                   supply.statusHistory.map((h) => (
-                    <div key={h.id} className="flex items-center justify-between text-[12.5px]">
+                    <div key={h.id} className="flex items-center justify-between py-2 text-[12.5px] first:pt-0 last:pb-0">
                       <span>{SUPPLY_STATUS_LABELS[h.status] ?? h.status}</span>
                       <span className="text-[var(--color-foreground-muted)]">{formatDateTime(h.createdAt)}</span>
                     </div>

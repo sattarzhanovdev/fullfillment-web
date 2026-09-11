@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Client } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
@@ -41,7 +41,7 @@ export default function ClientsPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="Пока нет клиентов" description="Добавьте первого клиента, чтобы начать работу" />
+          <EmptyState icon={Users} title="Пока нет клиентов" description="Добавьте первого клиента, чтобы начать работу" />
         ) : (
           <Table>
             <Thead>

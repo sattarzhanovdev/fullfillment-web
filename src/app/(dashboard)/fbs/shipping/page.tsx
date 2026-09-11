@@ -3,11 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ScanLine } from "lucide-react";
+import { ScanLine, Truck, Barcode } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, Subcard } from "@/components/ui/card";
 import { Select } from "@/components/ui/input";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -126,49 +126,61 @@ function ShipmentsTable({ statusParam, emptyTitle }: { statusParam: string; empt
   });
 
   if (isLoading) return <LoadingBlock />;
-  if (!data || data.length === 0) return <EmptyState title={emptyTitle} />;
+  if (!data || data.length === 0) return <EmptyState icon={Truck} title={emptyTitle} description="Отгрузки появятся здесь после создания" />;
 
   return (
     <div className="flex flex-col gap-3">
       {data.map((shipment) => (
         <Card key={shipment.id} className="overflow-hidden">
-          <CardContent className="flex flex-wrap items-center justify-between gap-3">
-            <div>
+          <CardContent className="flex flex-wrap items-center gap-4">
+            <div className="min-w-[160px]">
               <p className="text-[14px] font-semibold">{formatDateTime(shipment.scheduledAt)}</p>
               <p className="text-[12.5px] text-[var(--color-foreground-muted)]">
                 {shipment.warehouse?.name ?? "Склад не указан"} · {shipment.marketplace ? MARKETPLACE_LABELS[shipment.marketplace] : "Разные МП"}
               </p>
-              <p className="mt-1 font-mono text-[12px] text-[var(--color-foreground-muted)]">ШК короба: {shipment.barcode}</p>
+              <p className="mt-1 flex items-center gap-1 font-mono text-[12px] text-[var(--color-foreground-muted)]">
+                <Barcode className="h-3 w-3" /> {shipment.barcode}
+              </p>
             </div>
-            <div className="flex items-center gap-4 text-[12.5px] text-[var(--color-foreground-muted)]">
-              <span>{shipment.orders.length} заказов</span>
+
+            <Subcard className="flex items-center gap-3 px-3.5 py-2 text-[12.5px] text-[var(--color-foreground-muted)]">
+              <span>
+                <strong className="text-[var(--color-foreground)]">{shipment.orders.length}</strong> заказов
+              </span>
+              <span className="h-3 w-px bg-[var(--color-border)]" />
               <span>{shipment.boxesCount ?? 0} кор.</span>
+              <span className="h-3 w-px bg-[var(--color-border)]" />
               <span>{shipment.totalWeightKg ?? 0} кг</span>
+              <span className="h-3 w-px bg-[var(--color-border)]" />
               <span>{shipment.totalVolumeL ?? 0} л</span>
-            </div>
+            </Subcard>
+
             <Badge variant={SHIPMENT_STATUS_VARIANT[shipment.status]}>{SHIPMENT_STATUS_LABELS[shipment.status]}</Badge>
-            <Select
-              value={shipment.status}
-              disabled={updateStatusMutation.isPending}
-              onChange={(e) => updateStatusMutation.mutate({ shipmentId: shipment.id, status: e.target.value })}
-              className="w-auto"
-              title="Изменить статус отгрузки"
-            >
-              {Object.entries(SHIPMENT_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-            {shipment.wbSupplyId ? <WbShippingMethodDialog shipmentId={shipment.id} currentPointId={shipment.wbShippingPointId} /> : null}
-            <PrintShipmentBarcodeDialog
-              shipmentId={shipment.id}
-              barcode={shipment.barcode}
-              title={`Отгрузка ${formatDateTime(shipment.scheduledAt)} · ${shipment.warehouse?.name ?? "Склад не указан"}`}
-            />
-            <Button size="sm" variant="secondary" onClick={() => setExpandedId(expandedId === shipment.id ? null : shipment.id)}>
-              {expandedId === shipment.id ? "Скрыть" : "Заказы"}
-            </Button>
+
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <Select
+                value={shipment.status}
+                disabled={updateStatusMutation.isPending}
+                onChange={(e) => updateStatusMutation.mutate({ shipmentId: shipment.id, status: e.target.value })}
+                className="w-auto"
+                title="Изменить статус отгрузки"
+              >
+                {Object.entries(SHIPMENT_STATUS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+              {shipment.wbSupplyId ? <WbShippingMethodDialog shipmentId={shipment.id} currentPointId={shipment.wbShippingPointId} /> : null}
+              <PrintShipmentBarcodeDialog
+                shipmentId={shipment.id}
+                barcode={shipment.barcode}
+                title={`Отгрузка ${formatDateTime(shipment.scheduledAt)} · ${shipment.warehouse?.name ?? "Склад не указан"}`}
+              />
+              <Button size="sm" variant="secondary" onClick={() => setExpandedId(expandedId === shipment.id ? null : shipment.id)}>
+                {expandedId === shipment.id ? "Скрыть" : "Заказы"}
+              </Button>
+            </div>
           </CardContent>
 
           {expandedId === shipment.id && (

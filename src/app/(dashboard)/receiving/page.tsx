@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, PackageOpen } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import type { Client, Product } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
@@ -53,7 +53,7 @@ export default function ReceivingPage() {
         {isLoading ? (
           <LoadingBlock />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="Приёмок пока нет" />
+          <EmptyState icon={PackageOpen} title="Приёмок пока нет" description="Создайте первую, когда придёт товар от клиента" />
         ) : (
           <Table>
             <Thead>
