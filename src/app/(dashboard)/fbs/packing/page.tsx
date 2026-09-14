@@ -3,16 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
-import type { Client } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Select, Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/table";
-import { Toolbar } from "@/components/ui/toolbar";
 import { Badge } from "@/components/ui/badge";
 import { LoadingBlock } from "@/components/ui/spinner";
-import { Users, PackageCheck, ScanLine } from "lucide-react";
+import { PackageCheck, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PackingOrder {
@@ -60,22 +58,15 @@ function playBeep(ok: boolean) {
 
 export default function FbsPackingPage() {
   const queryClient = useQueryClient();
-  const [clientId, setClientId] = useState("");
   const [scanValue, setScanValue] = useState("");
   const [scanError, setScanError] = useState<string | null>(null);
   const [flashIds, setFlashIds] = useState<Record<string, boolean>>({});
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data: clients } = useQuery({
-    queryKey: ["clients"],
-    queryFn: async () => (await apiClient.get<Client[]>("/clients")).data,
-  });
-
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["packing-orders", clientId],
+    queryKey: ["packing-orders"],
     queryFn: async () =>
-      (await apiClient.get<PackingOrder[]>("/orders", { params: { clientId, status: "PICKED,PACKING" } })).data,
-    enabled: !!clientId,
+      (await apiClient.get<PackingOrder[]>("/orders", { params: { status: "PICKED,PACKING" } })).data,
     refetchInterval: 10_000,
   });
 
@@ -117,7 +108,7 @@ export default function FbsPackingPage() {
       setScanError(null);
       setFlashIds((f) => ({ ...f, [variables.itemId]: true }));
       playBeep(true);
-      queryClient.invalidateQueries({ queryKey: ["packing-orders", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["packing-orders"] });
       setTimeout(() => setFlashIds((f) => { const n = { ...f }; delete n[variables.itemId]; return n; }), 1200);
     },
     onError: (err) => {
@@ -129,12 +120,12 @@ export default function FbsPackingPage() {
   const packagingMutation = useMutation({
     mutationFn: async (params: { orderId: string; packagingTypeId: string }) =>
       apiClient.patch(`/orders/${params.orderId}/packaging`, { packagingTypeId: params.packagingTypeId }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["packing-orders", clientId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["packing-orders"] }),
   });
 
   useEffect(() => {
     inputRef.current?.focus();
-  }, [clientId]);
+  }, []);
 
   function handleScanSubmit() {
     const barcode = scanValue.trim();
@@ -152,117 +143,87 @@ export default function FbsPackingPage() {
 
   return (
     <div onClick={() => inputRef.current?.focus()}>
-      <PageHeader title="FBS · Упаковка" description="Сканируйте уже собранные товары, чтобы упаковать заказ" />
+      <PageHeader title="FBS · Упаковка" description="Сканируйте собранные товары для упаковки заказов" />
 
-      <Toolbar>
-        <div className="w-64">
-          <Label htmlFor="client-select" className="mb-1 flex items-center gap-1.5">
-            <Users className="h-3 w-3" /> Клиент
-          </Label>
-          <Select
-            id="client-select"
-            value={clientId}
-            onChange={(e) => {
-              setClientId(e.target.value);
-              setScanError(null);
-            }}
-            className="border-none bg-[var(--color-surface)]"
-          >
-            <option value="">Все клиенты</option>
-            {clients?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
+      <Card className="mb-5 p-5">
+        <Label htmlFor="scan-input" className="flex items-center gap-1.5">
+          <ScanLine className="h-3.5 w-3.5" /> Сканируйте штрихкод
+        </Label>
+        <Input
+          id="scan-input"
+          ref={inputRef}
+          autoFocus
+          value={scanValue}
+          onChange={(e) => setScanValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleScanSubmit();
+            }
+          }}
+          placeholder="Штрихкод → Enter"
+          className="h-14 text-[20px] font-mono tracking-wide"
+        />
+        {scanError ? <p className="mt-2 text-[13.5px] font-medium text-[var(--color-danger)]">{scanError}</p> : null}
+      </Card>
+
+      {ordersReadyForPackaging.length > 0 && (
+        <Card className="mb-5 p-5">
+          <p className="mb-3 flex items-center gap-1.5 text-[13px] font-medium">
+            <PackageCheck className="h-3.5 w-3.5 text-[var(--color-success)]" />
+            Заказы, готовые к упаковке — выберите тип упаковки
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {ordersReadyForPackaging.map((order) => (
+              <PackagingRow
+                key={order.id}
+                orderNumber={order.orderNumber}
+                options={packagingTypes ?? []}
+                onSubmit={(packagingTypeId) => packagingMutation.mutate({ orderId: order.id, packagingTypeId })}
+                pending={packagingMutation.isPending}
+              />
             ))}
-          </Select>
-        </div>
-      </Toolbar>
+          </div>
+        </Card>
+      )}
 
-      {!clientId ? (
-        <EmptyState icon={Users} title="Выберите клиента" description="После выбора появится список собранных товаров" />
+      {isLoading ? (
+        <LoadingBlock />
+      ) : flatItems.length === 0 ? (
+        <EmptyState icon={PackageCheck} title="Нет собранных товаров" description="Сначала соберите заказы на экране сборки" />
       ) : (
-        <>
-          <Card className="mb-5 p-5">
-            <Label htmlFor="scan-input" className="flex items-center gap-1.5">
-              <ScanLine className="h-3.5 w-3.5" /> Сканируйте штрихкод
-            </Label>
-            <Input
-              id="scan-input"
-              ref={inputRef}
-              autoFocus
-              value={scanValue}
-              onChange={(e) => setScanValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleScanSubmit();
-                }
-              }}
-              placeholder="Штрихкод → Enter"
-              className="h-14 text-[20px] font-mono tracking-wide"
-            />
-            {scanError ? <p className="mt-2 text-[13.5px] font-medium text-[var(--color-danger)]">{scanError}</p> : null}
-          </Card>
-
-          {ordersReadyForPackaging.length > 0 && (
-            <Card className="mb-5 p-5">
-              <p className="mb-3 flex items-center gap-1.5 text-[13px] font-medium">
-                <PackageCheck className="h-3.5 w-3.5 text-[var(--color-success)]" />
-                Заказы, готовые к упаковке — выберите тип упаковки
-              </p>
-              <div className="flex flex-col gap-2.5">
-                {ordersReadyForPackaging.map((order) => (
-                  <PackagingRow
-                    key={order.id}
-                    orderNumber={order.orderNumber}
-                    options={packagingTypes ?? []}
-                    onSubmit={(packagingTypeId) => packagingMutation.mutate({ orderId: order.id, packagingTypeId })}
-                    pending={packagingMutation.isPending}
-                  />
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {isLoading ? (
-            <LoadingBlock />
-          ) : flatItems.length === 0 ? (
-            <EmptyState icon={PackageCheck} title="Нет собранных товаров" description="Сначала соберите заказы на экране сборки" />
-          ) : (
-            <Card className="overflow-hidden">
-              <Table>
-                <Thead>
-                  <tr>
-                    <Th>Товар</Th>
-                    <Th>Артикул</Th>
-                    <Th>Штрихкод</Th>
-                    <Th>Собрано</Th>
-                    <Th>Упаковано</Th>
-                    <Th>Заказ</Th>
-                    <Th>Статус</Th>
-                  </tr>
-                </Thead>
-                <tbody>
-                  {flatItems.map((item) => {
-                    const done = item.qtyPacked >= item.qtyPicked;
-                    const flash = flashIds[item.itemId];
-                    return (
-                      <Tr key={item.itemId} className={cn(done && "opacity-50", flash && "bg-[var(--color-success-bg)]")}>
-                        <Td className="font-medium">{item.product.name}</Td>
-                        <Td>{item.product.article}</Td>
-                        <Td className="font-mono text-[12.5px]">{item.product.barcode}</Td>
-                        <Td>{item.qtyPicked}</Td>
-                        <Td>{item.qtyPacked}</Td>
-                        <Td>№{item.orderNumber}</Td>
-                        <Td>{done ? <Badge variant="success">Упаковано</Badge> : <Badge variant="accent">В работе</Badge>}</Td>
-                      </Tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
-            </Card>
-          )}
-        </>
+        <Card className="overflow-hidden">
+          <Table>
+            <Thead>
+              <tr>
+                <Th>Товар</Th>
+                <Th>Артикул</Th>
+                <Th>Штрихкод</Th>
+                <Th>Собрано</Th>
+                <Th>Упаковано</Th>
+                <Th>Заказ</Th>
+                <Th>Статус</Th>
+              </tr>
+            </Thead>
+            <tbody>
+              {flatItems.map((item) => {
+                const done = item.qtyPacked >= item.qtyPicked;
+                const flash = flashIds[item.itemId];
+                return (
+                  <Tr key={item.itemId} className={cn(done && "opacity-50", flash && "bg-[var(--color-success-bg)]")}>
+                    <Td className="font-medium">{item.product.name}</Td>
+                    <Td>{item.product.article}</Td>
+                    <Td className="font-mono text-[12.5px]">{item.product.barcode}</Td>
+                    <Td>{item.qtyPicked}</Td>
+                    <Td>{item.qtyPacked}</Td>
+                    <Td>№{item.orderNumber}</Td>
+                    <Td>{done ? <Badge variant="success">Упаковано</Badge> : <Badge variant="accent">В работе</Badge>}</Td>
+                  </Tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        </Card>
       )}
     </div>
   );

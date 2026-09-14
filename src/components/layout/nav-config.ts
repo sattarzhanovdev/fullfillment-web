@@ -97,6 +97,7 @@ export const NAV_SECTIONS: NavSection[] = [
     icon: CircleDollarSign,
     roles: OFFICE_ROLES,
     items: [
+      { label: "Услуги", href: "/prices/services", icon: CircleDollarSign },
       { label: "Общая цена", href: "/prices/general", icon: Calculator },
       { label: "Цены клиентов", href: "/prices/clients", icon: Users },
       { label: "Требует цены", href: "/prices/needs-price", icon: AlertTriangle },

@@ -26,8 +26,12 @@ interface Receipt {
   date: string;
   expectedPlaces: number | null;
   expectedItems: number | null;
+  transportCompany: string | null;
+  comment: string | null;
   status: string;
-  client: { name: string };
+  client: { id: string; name: string };
+  warehouse: { id: string; name: string };
+  createdBy: { id: string; fullName: string } | null;
   items: { actualQty: number }[];
 }
 
@@ -58,11 +62,15 @@ export default function ReceivingPage() {
           <Table>
             <Thead>
               <tr>
+                <Th>Дата приёмки</Th>
+                <Th>Накладная</Th>
+                <Th>Пункт приёмки</Th>
                 <Th>Клиент</Th>
-                <Th>Документ</Th>
-                <Th>Дата</Th>
-                <Th>Мест</Th>
-                <Th>Ожидалось / принято</Th>
+                <Th>Кол-во</Th>
+                <Th>Коробов</Th>
+                <Th>Транспортная компания</Th>
+                <Th>Сотрудник</Th>
+                <Th>Комментарий</Th>
                 <Th>Статус</Th>
               </tr>
             </Thead>
@@ -71,16 +79,22 @@ export default function ReceivingPage() {
                 const actual = r.items.reduce((s, i) => s + i.actualQty, 0);
                 return (
                   <Tr key={r.id}>
-                    <Td>{r.client.name}</Td>
+                    <Td>{formatDate(r.date)}</Td>
                     <Td>
                       <Link href={`/receiving/${r.id}`} className="font-medium text-[var(--color-accent)] hover:underline">
                         {r.documentNumber ?? `№${r.id.slice(-6)}`}
                       </Link>
                     </Td>
-                    <Td>{formatDate(r.date)}</Td>
-                    <Td>{r.expectedPlaces ?? "—"}</Td>
+                    <Td>{r.warehouse?.name ?? "—"}</Td>
+                    <Td>{r.client.name}</Td>
                     <Td>
                       {r.expectedItems ?? 0} / {actual}
+                    </Td>
+                    <Td>{r.expectedPlaces ?? "—"}</Td>
+                    <Td>{r.transportCompany ?? "—"}</Td>
+                    <Td>{r.createdBy?.fullName ?? "—"}</Td>
+                    <Td className="max-w-[200px] truncate text-[12.5px] text-[var(--color-foreground-muted)]">
+                      {r.comment ?? "—"}
                     </Td>
                     <Td>
                       <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
@@ -114,8 +128,9 @@ function CreateReceiptDialog() {
 
   const [clientId, setClientId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
-  const [documentNumber, setDocumentNumber] = useState("");
   const [expectedPlaces, setExpectedPlaces] = useState("");
+  const [transportCompany, setTransportCompany] = useState("");
+  const [comment, setComment] = useState("");
   const [items, setItems] = useState<{ productId: string; expectedQty: string }[]>([{ productId: "", expectedQty: "1" }]);
 
   const { data: products } = useQuery({
@@ -129,15 +144,17 @@ function CreateReceiptDialog() {
       apiClient.post("/receipts", {
         clientId,
         warehouseId,
-        documentNumber: documentNumber || undefined,
         expectedPlaces: expectedPlaces ? Number(expectedPlaces) : undefined,
+        transportCompany: transportCompany || undefined,
+        comment: comment || undefined,
         items: items.filter((i) => i.productId).map((i) => ({ productId: i.productId, expectedQty: Number(i.expectedQty) })),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["receipts"] });
       setOpen(false);
       setClientId("");
-      setDocumentNumber("");
+      setTransportCompany("");
+      setComment("");
       setItems([{ productId: "", expectedQty: "1" }]);
     },
     onError: (err) => setError(apiErrorMessage(err)),
@@ -172,7 +189,7 @@ function CreateReceiptDialog() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="warehouse">Склад</Label>
+              <Label htmlFor="warehouse">Пункт приёмки (склад)</Label>
               <Select id="warehouse" required value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
                 <option value="">Выберите</option>
                 {warehouses?.map((w) => (
@@ -183,14 +200,19 @@ function CreateReceiptDialog() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="docNumber">Номер документа</Label>
-              <Input id="docNumber" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="places">Ожидаемое кол-во мест</Label>
+              <Label htmlFor="places">Количество коробов</Label>
               <Input id="places" type="number" value={expectedPlaces} onChange={(e) => setExpectedPlaces(e.target.value)} />
             </div>
+            <div>
+              <Label htmlFor="transport">Транспортная компания</Label>
+              <Input id="transport" value={transportCompany} onChange={(e) => setTransportCompany(e.target.value)} placeholder="ПЭК, СДЭК…" />
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="receipt-comment">Комментарий</Label>
+              <Input id="receipt-comment" value={comment} onChange={(e) => setComment(e.target.value)} />
+            </div>
           </div>
+          <p className="text-[12px] text-[var(--color-foreground-muted)]">Дата и номер накладной заполняются автоматически при создании</p>
 
           <div>
             <Label>Ожидаемые товары</Label>

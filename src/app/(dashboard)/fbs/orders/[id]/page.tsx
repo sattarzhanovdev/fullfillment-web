@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Flag, Clock, Wallet, User, Printer, History } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
@@ -10,12 +10,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Table, Thead, Th, Tr, Td } from "@/components/ui/table";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { Dialog, DialogContent, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { OrderStatusBadge } from "@/components/ui/status-badge";
-import { ORDER_STATUS_LABELS, MARKETPLACE_LABELS } from "@/lib/status";
+import { MARKETPLACE_LABELS } from "@/lib/status";
 import { formatDateTime, formatMoney } from "@/lib/utils";
 
 interface OrderDetail {
@@ -42,42 +41,11 @@ interface OrderDetail {
   statusHistory: { id: string; status: string; createdAt: string; userId: string | null }[];
 }
 
-const ALL_STATUSES = Object.keys(ORDER_STATUS_LABELS);
-
 export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
-  const [nextStatus, setNextStatus] = useState("");
-  const [packagingTypeId, setPackagingTypeId] = useState("");
-
   const { data: order, isLoading } = useQuery({
     queryKey: ["orders", id],
     queryFn: async () => (await apiClient.get<OrderDetail>(`/orders/${id}`)).data,
-  });
-
-  const { data: packagingTypes } = useQuery({
-    queryKey: ["packaging"],
-    queryFn: async () => (await apiClient.get("/packaging", { params: { activeOnly: "true" } })).data,
-  });
-
-  const statusMutation = useMutation({
-    mutationFn: async () => apiClient.patch(`/orders/${id}/status`, { status: nextStatus }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders", id] });
-      setError(null);
-      setNextStatus("");
-    },
-    onError: (err) => setError(apiErrorMessage(err, "Переход запрещён бизнес-логикой")),
-  });
-
-  const packagingMutation = useMutation({
-    mutationFn: async () => apiClient.patch(`/orders/${id}/packaging`, { packagingTypeId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders", id] });
-      setError(null);
-    },
-    onError: (err) => setError(apiErrorMessage(err)),
   });
 
   if (isLoading || !order) return <LoadingBlock />;
@@ -119,72 +87,14 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
         <StatCard label="Ответственный" value={order.assignee?.fullName ?? "—"} icon={User} tone="accent" />
       </div>
 
-      {error ? (
-        <div className="mb-4 rounded-[var(--radius-control)] bg-[var(--color-danger-bg)] px-4 py-2.5 text-[13px] text-[var(--color-danger)]">
-          {error}
-        </div>
-      ) : null}
-
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardContent>
-            <p className="mb-2 text-[13px] font-medium">Изменить статус</p>
-            <div className="flex items-center gap-2">
-              <Select value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} className="flex-1">
-                <option value="">Выберите статус</option>
-                {ALL_STATUSES.filter((s) => s !== order.status).map((s) => (
-                  <option key={s} value={s}>
-                    {ORDER_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </Select>
-              <Button
-                size="sm"
-                disabled={!nextStatus || statusMutation.isPending}
-                onClick={() => statusMutation.mutate()}
-              >
-                Применить
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <p className="mb-2 text-[13px] font-medium">Упаковка{order.packagingType ? `: ${order.packagingType.name}` : ""}</p>
-            <div className="flex items-center gap-2">
-              <Select value={packagingTypeId} onChange={(e) => setPackagingTypeId(e.target.value)} className="flex-1">
-                <option value="">Выберите тип упаковки</option>
-                {packagingTypes?.map((p: any) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={!packagingTypeId || packagingMutation.isPending}
-                onClick={() => packagingMutation.mutate()}
-              >
-                Сохранить
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card className="mb-6 overflow-hidden">
         <Table>
           <Thead>
             <tr>
               <Th>Товар</Th>
               <Th>Артикул</Th>
-              <Th>Штрихкод</Th>
-              <Th>Нужно</Th>
-              <Th>Собрано</Th>
-              <Th>Упаковано</Th>
-              <Th>Статус</Th>
+              <Th>Штрихкод / Баркод</Th>
+              <Th>Кол-во</Th>
             </tr>
           </Thead>
           <tbody>
@@ -194,9 +104,6 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
                 <Td>{item.product.article}</Td>
                 <Td className="font-mono text-[12.5px]">{item.product.barcode}</Td>
                 <Td>{item.qtyNeeded}</Td>
-                <Td>{item.qtyPicked}</Td>
-                <Td>{item.qtyPacked}</Td>
-                <Td>{item.notFound ? <Badge variant="danger">Не найден</Badge> : <Badge variant="success">В порядке</Badge>}</Td>
               </Tr>
             ))}
           </tbody>

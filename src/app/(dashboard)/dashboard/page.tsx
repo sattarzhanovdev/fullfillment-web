@@ -6,14 +6,12 @@ import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowRight,
-  ClipboardCheck,
-  ClipboardList,
   PackageCheck,
   PackageOpen,
-  PackagePlus,
   ShoppingCart,
   Truck,
   Wallet,
+  Users,
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { apiClient } from "@/lib/api-client";
@@ -21,7 +19,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/table";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { OrderStatusBadge } from "@/components/ui/status-badge";
@@ -102,12 +99,16 @@ function greeting() {
   return "Добрый вечер";
 }
 
-const QUICK_ACTIONS = [
-  { label: "Новый заказ", href: "/fbs/orders", icon: ClipboardList },
-  { label: "Новая поставка", href: "/fbo/supplies", icon: PackagePlus },
-  { label: "Приёмка", href: "/receiving", icon: PackageOpen },
-  { label: "Инвентаризация", href: "/warehouse/inventory", icon: ClipboardCheck },
-];
+interface EmployeeKpi {
+  ordersPickedByUser: Record<string, number>;
+  ordersPackedByUser: Record<string, number>;
+  ordersShippedByUser: Record<string, number>;
+}
+
+interface UserInfo {
+  id: string;
+  fullName: string;
+}
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
@@ -139,31 +140,45 @@ export default function DashboardPage() {
     queryKey: ["dashboard-upcoming-shipments"],
     queryFn: async () => (await apiClient.get<UpcomingShipment[]>("/dashboard/upcoming-shipments")).data,
   });
+  const { data: employeeKpi } = useQuery({
+    queryKey: ["dashboard-employee-kpi"],
+    queryFn: async () => (await apiClient.get<EmployeeKpi>("/dashboard/employee-kpi")).data,
+    refetchInterval: 60_000,
+  });
+  const { data: users } = useQuery({
+    queryKey: ["users-list"],
+    queryFn: async () => (await apiClient.get<UserInfo[]>("/users")).data,
+  });
 
   const attentionCount = attention?.length ?? 0;
   const revenueTrendTotal = useMemo(() => (trend ?? []).reduce((s, p) => s + p.revenue, 0), [trend]);
+  const userMap = useMemo(() => new Map((users ?? []).map((u) => [u.id, u.fullName])), [users]);
+
+  const kpiRows = useMemo(() => {
+    if (!employeeKpi) return [];
+    const allIds = new Set([
+      ...Object.keys(employeeKpi.ordersPickedByUser),
+      ...Object.keys(employeeKpi.ordersPackedByUser),
+      ...Object.keys(employeeKpi.ordersShippedByUser),
+    ]);
+    return Array.from(allIds).map((id) => ({
+      id,
+      name: userMap.get(id) ?? id,
+      picked: employeeKpi.ordersPickedByUser[id] ?? 0,
+      packed: employeeKpi.ordersPackedByUser[id] ?? 0,
+      shipped: employeeKpi.ordersShippedByUser[id] ?? 0,
+    })).sort((a, b) => (b.picked + b.packed + b.shipped) - (a.picked + a.packed + a.shipped));
+  }, [employeeKpi, userMap]);
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--color-border)] pb-5">
-        <div>
-          <h1 className="text-[23px] font-semibold tracking-tight">
-            {greeting()}{user ? `, ${user.fullName.split(" ")[0]}` : ""}
-          </h1>
-          <p className="mt-1.5 text-[13.5px] text-[var(--color-foreground-muted)]">
-            {new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {QUICK_ACTIONS.map((action) => (
-            <Button key={action.href} variant="secondary" size="sm" asChild>
-              <Link href={action.href}>
-                <action.icon className="h-3.5 w-3.5" />
-                {action.label}
-              </Link>
-            </Button>
-          ))}
-        </div>
+      <div className="border-b border-[var(--color-border)] pb-5">
+        <h1 className="text-[23px] font-semibold tracking-tight">
+          {greeting()}{user ? `, ${user.fullName.split(" ")[0]}` : ""}
+        </h1>
+        <p className="mt-1.5 text-[13.5px] text-[var(--color-foreground-muted)]">
+          {new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}
+        </p>
       </div>
 
       {isLoading || !data ? (
@@ -364,6 +379,44 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-1.5">
+                <Users className="h-4 w-4 text-[var(--color-accent)]" />
+                Аналитика сотрудников сегодня
+              </CardTitle>
+              <CardDescription>Кто сколько FBS-заказов собрал, упаковал и отгрузил</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              {kpiRows.length === 0 ? (
+                <p className="text-[13px] text-[var(--color-foreground-muted)]">Активности за сегодня пока нет</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[13px]">
+                    <thead>
+                      <tr className="border-b border-[var(--color-border)] text-left text-[12px] text-[var(--color-foreground-muted)]">
+                        <th className="pb-2 pr-4 font-medium">Сотрудник</th>
+                        <th className="pb-2 pr-4 font-medium">Собрал</th>
+                        <th className="pb-2 pr-4 font-medium">Упаковал</th>
+                        <th className="pb-2 font-medium">Отгрузил</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {kpiRows.map((row) => (
+                        <tr key={row.id} className="border-b border-[var(--color-border)] last:border-0">
+                          <td className="py-2 pr-4 font-medium">{row.name}</td>
+                          <td className="py-2 pr-4">{row.picked}</td>
+                          <td className="py-2 pr-4">{row.packed}</td>
+                          <td className="py-2">{row.shipped}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
