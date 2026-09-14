@@ -2,8 +2,8 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Flag, Clock, Wallet, User, Printer, History } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Flag, Clock, Wallet, User, Printer, History, RefreshCw } from "lucide-react";
 import { apiClient, apiErrorMessage } from "@/lib/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,6 +64,9 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
         description={`${MARKETPLACE_LABELS[order.marketplace] ?? order.marketplace} · ${order.client.name}`}
         actions={
           <div className="flex items-center gap-2">
+            {["ERROR", "NEEDS_PRICE", "BLOCKED_DEBT"].includes(order.status) ? (
+              <ReprocessButton orderId={id} />
+            ) : null}
             <PrintLabelDialog orderId={id} orderNumber={order.orderNumber} />
             <OrderStatusBadge status={order.status} />
           </div>
@@ -126,6 +129,30 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function ReprocessButton({ orderId }: { orderId: string }) {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async () => (await apiClient.post(`/orders/${orderId}/reprocess`)).data,
+    onSuccess: () => {
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["orders", orderId] });
+    },
+    onError: (err) => setError(apiErrorMessage(err, "Не удалось повторно обработать заказ")),
+  });
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Button size="sm" variant="secondary" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
+        <RefreshCw className="h-3.5 w-3.5" />
+        {mutation.isPending ? "Проверяем…" : "Повторить обработку"}
+      </Button>
+      {error ? <p className="text-[12px] text-[var(--color-danger)]">{error}</p> : null}
     </div>
   );
 }
