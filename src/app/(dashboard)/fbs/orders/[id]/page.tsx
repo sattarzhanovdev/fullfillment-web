@@ -14,7 +14,7 @@ import { Table, Thead, Th, Tr, Td } from "@/components/ui/table";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { Dialog, DialogContent, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { OrderStatusBadge } from "@/components/ui/status-badge";
-import { MARKETPLACE_LABELS } from "@/lib/status";
+import { MARKETPLACE_LABELS, ORDER_STATUS_LABELS } from "@/lib/status";
 import { formatDateTime, formatMoney } from "@/lib/utils";
 
 interface OrderDetail {
@@ -68,7 +68,7 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
               <ReprocessButton orderId={id} />
             ) : null}
             <PrintLabelDialog orderId={id} orderNumber={order.orderNumber} />
-            <OrderStatusBadge status={order.status} />
+            <StatusChanger orderId={id} status={order.status} />
           </div>
         }
       />
@@ -129,6 +129,44 @@ export default function FbsOrderDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+const ALL_STATUSES = Object.keys(ORDER_STATUS_LABELS);
+
+function StatusChanger({ orderId, status }: { orderId: string; status: string }) {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async (nextStatus: string) =>
+      (await apiClient.patch(`/orders/${orderId}/status`, { status: nextStatus })).data,
+    onSuccess: () => {
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["orders", orderId] });
+    },
+    onError: (err) => setError(apiErrorMessage(err, "Не удалось изменить статус")),
+  });
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Select
+        value={status}
+        disabled={mutation.isPending}
+        onChange={(e) => {
+          const next = e.target.value;
+          if (next !== status) mutation.mutate(next);
+        }}
+        className="h-9 w-[200px] text-[13px]"
+      >
+        {ALL_STATUSES.map((s) => (
+          <option key={s} value={s}>
+            {ORDER_STATUS_LABELS[s]}
+          </option>
+        ))}
+      </Select>
+      {error ? <p className="max-w-[260px] text-right text-[12px] text-[var(--color-danger)]">{error}</p> : null}
     </div>
   );
 }
