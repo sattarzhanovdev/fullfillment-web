@@ -27,7 +27,17 @@ interface ScannedProduct {
  * Если недоступен (заказ не от WB, нет интеграции, WB ещё не подтвердил) — запасной
  * вариант: собственный CODE128 по штрихкоду товара (годится только для внутреннего скана).
  */
-export function OrderLabelCard({ orderId, orderNumber, product }: { orderId: string; orderNumber: string; product: ScannedProduct }) {
+export function OrderLabelCard({
+  orderId,
+  orderNumber,
+  product,
+  wbWarning,
+}: {
+  orderId: string;
+  orderNumber: string;
+  product: ScannedProduct;
+  wbWarning?: string | null;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const {
@@ -88,7 +98,8 @@ export function OrderLabelCard({ orderId, orderNumber, product }: { orderId: str
               <canvas ref={canvasRef} />
             </Subcard>
             <p className="mt-2 text-[11.5px] text-[var(--color-foreground-muted)]">
-              Этикетка WB недоступна{error ? `: ${apiErrorMessage(error)}` : ""} — показан внутренний штрихкод товара
+              Этикетка WB недоступна: {wbWarning || (error ? apiErrorMessage(error) : "заказ ещё не подтверждён")} — показан
+              внутренний штрихкод товара
             </p>
           </>
         )}

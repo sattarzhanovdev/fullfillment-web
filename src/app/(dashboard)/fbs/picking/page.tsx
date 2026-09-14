@@ -77,6 +77,7 @@ export default function FbsPickingPage() {
     orderId: string;
     orderNumber: string;
     product: { name: string; article: string; barcode: string };
+    wbWarning: string | null;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -112,13 +113,18 @@ export default function FbsPickingPage() {
 
       // Подключаем заказ к отгрузке как можно раньше — только это заставляет WB подтвердить
       // заказ (supplierStatus new → confirm) и выдать стикер. Best-effort: если не удалось,
-      // карточка ниже просто покажет запасной внутренний штрихкод.
+      // карточка ниже просто покажет запасной внутренний штрихкод — но покажет и причину
+      // (wbWarning), а не только общий "WB ещё не подтвердил".
+      let wbWarning: string | null = null;
       try {
-        await apiClient.post(`/shipments/orders/${variables.orderId}/ensure`);
-      } catch {
-        // не критично
+        const ensureRes = await apiClient.post<{ shipmentId: string; wbWarning: string | null }>(
+          `/shipments/orders/${variables.orderId}/ensure`,
+        );
+        wbWarning = ensureRes.data.wbWarning;
+      } catch (err) {
+        wbWarning = apiErrorMessage(err, "Не удалось подключить заказ к отгрузке");
       }
-      setLastScanned({ orderId: variables.orderId, orderNumber: variables.orderNumber, product: variables.product });
+      setLastScanned({ orderId: variables.orderId, orderNumber: variables.orderNumber, product: variables.product, wbWarning });
     },
     onError: (err) => {
       setScanError(apiErrorMessage(err, "Неверный товар"));
@@ -187,7 +193,12 @@ export default function FbsPickingPage() {
       </Card>
 
       {lastScanned ? (
-        <OrderLabelCard orderId={lastScanned.orderId} orderNumber={lastScanned.orderNumber} product={lastScanned.product} />
+        <OrderLabelCard
+          orderId={lastScanned.orderId}
+          orderNumber={lastScanned.orderNumber}
+          product={lastScanned.product}
+          wbWarning={lastScanned.wbWarning}
+        />
       ) : null}
 
       {isLoading ? (
