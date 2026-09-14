@@ -13,6 +13,31 @@ import { LoadingBlock } from "@/components/ui/spinner";
 import { OrderLabelCard } from "@/components/scanner/order-label-card";
 import { ClipboardList, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ORDER_STATUS_LABELS } from "@/lib/status";
+
+interface BarcodeDiagnosis {
+  reason: "no_product" | "no_active_order" | "marked_not_found" | "already_picked" | "wrong_status" | "unknown";
+  orderNumber?: string;
+  status?: string;
+  clientName?: string;
+}
+
+function diagnosisMessage(d: BarcodeDiagnosis): string {
+  switch (d.reason) {
+    case "no_product":
+      return "Товар с таким штрихкодом не найден в базе";
+    case "no_active_order":
+      return "Товар найден, но не числится ни в одном заказе";
+    case "marked_not_found":
+      return `Позиция уже отмечена «Не найден» в заказе №${d.orderNumber}`;
+    case "already_picked":
+      return `Позиция уже полностью собрана в заказе №${d.orderNumber}`;
+    case "wrong_status":
+      return `Заказ №${d.orderNumber} (${d.clientName}) сейчас в статусе «${ORDER_STATUS_LABELS[d.status ?? ""] ?? d.status}» — сборка недоступна, пока заказ не перейдёт в обработку`;
+    default:
+      return "Неверный товар: штрихкод не найден среди ожидающих позиций";
+  }
+}
 
 interface PickableItem {
   id: string;
@@ -110,15 +135,20 @@ export default function FbsPickingPage() {
     inputRef.current?.focus();
   }, []);
 
-  function handleScanSubmit() {
+  async function handleScanSubmit() {
     const barcode = scanValue.trim();
     setScanValue("");
     if (!barcode || !items) return;
 
     const match = items.find((i) => i.product.barcode === barcode && i.qtyPicked < i.qtyNeeded && !i.notFound);
     if (!match) {
-      setScanError("Неверный товар: штрихкод не найден среди ожидающих позиций");
       playBeep(false);
+      try {
+        const { data } = await apiClient.get<BarcodeDiagnosis>(`/orders/picking/diagnose/${encodeURIComponent(barcode)}`);
+        setScanError(diagnosisMessage(data));
+      } catch {
+        setScanError("Неверный товар: штрихкод не найден среди ожидающих позиций");
+      }
       return;
     }
     pickMutation.mutate({
